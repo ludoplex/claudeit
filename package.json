@@ -2,7 +2,7 @@
   "name": "claudeit",
   "version": "1.0.0",
   "description": "Claude API Billing Monitor & Audit Logger for tracking Anthropic API usage",
-  "main": "app.js",
+  "main": "index.html",
   "scripts": {
     "test": "jest --coverage",
     "test:watch": "jest --watch",
