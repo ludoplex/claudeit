@@ -6,6 +6,7 @@
     <title>OpusAudit - Claude API Billing Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
     <script src="https://js.puter.com/v2/"></script>
+    <script src="puter.js"></script>
     <style>
         @keyframes pulse-glow {
             0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
@@ -263,30 +264,18 @@
     </div>
 
     <script>
-        // Application State
-        let appState = {
-            user: null,
-            requestLogs: [],
-            refundableEvents: [],
-            chatHistory: [],
-            totalSpent: 0,
-            disputedValue: 0
-        };
+        // Use the OpusAudit module from puter.js
+        const { appState, Utils, StorageManager, AuthManager, ClaudeAPIManager, RefundAnalyzer, ExportManager, CONFIG } = window.OpusAudit;
 
-        // Pricing (per 1K tokens)
-        const PRICING = {
-            'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 },
-            'claude-3-5-haiku-20241022': { input: 0.0008, output: 0.004 },
-            'claude-3-7-sonnet-20250219': { input: 0.003, output: 0.015 }
-        };
+        // Start auto-save
+        window.OpusAudit.startAutoSave();
 
         // Authentication
         async function signInWithPuter() {
             try {
-                const user = await puter.auth.signIn();
-                appState.user = user;
+                await AuthManager.signIn();
                 showDashboard();
-                loadSavedData();
+                await loadSavedData();
             } catch (error) {
                 console.error('Auth error:', error);
                 alert('Authentication failed. Please try again.');
@@ -295,15 +284,8 @@
 
         async function signOut() {
             try {
-                await puter.auth.signOut();
-                appState = {
-                    user: null,
-                    requestLogs: [],
-                    refundableEvents: [],
-                    chatHistory: [],
-                    totalSpent: 0,
-                    disputedValue: 0
-                };
+                window.OpusAudit.stopAutoSave();
+                await AuthManager.signOut();
                 document.getElementById('authScreen').classList.remove('hidden');
                 document.getElementById('dashboard').classList.add('hidden');
             } catch (error) {
@@ -320,24 +302,14 @@
         // Load saved data from Puter KV
         async function loadSavedData() {
             try {
-                const logs = await puter.kv.get('opusaudit_logs');
-                if (logs) {
-                    appState.requestLogs = JSON.parse(logs);
+                const loaded = await StorageManager.load();
+                if (loaded) {
                     updateStats();
                     renderRequestLogs();
                     renderRefundableEvents();
                 }
             } catch (error) {
                 console.error('Error loading saved data:', error);
-            }
-        }
-
-        // Save data to Puter KV
-        async function saveData() {
-            try {
-                await puter.kv.set('opusaudit_logs', JSON.stringify(appState.requestLogs));
-            } catch (error) {
-                console.error('Error saving data:', error);
             }
         }
 
@@ -356,87 +328,41 @@
             // Add user message to chat
             addChatMessage('user', message);
             
-            // Create request log entry
-            const requestLog = {
-                id: generateRequestId(),
-                timestamp: new Date().toISOString(),
-                model: model,
-                inputTokens: estimateTokens(message),
-                status: 'PENDING',
-                stopReason: null,
-                outputTokens: 0,
-                cost: 0,
-                latencyMs: 0,
-                isRefundable: false,
-                refundReason: null
+            // Add assistant placeholder
+            const assistantDiv = addChatMessage('assistant', '', true);
+            
+            // Set up streaming callback
+            ClaudeAPIManager.onChunk = (text) => {
+                const content = assistantDiv.querySelector('.message-content');
+                content.textContent = content.textContent.replace('▋', '') + text;
+                content.innerHTML += '<span class="animate-pulse">▋</span>';
             };
-
-            const startTime = Date.now();
-
-            try {
-                // Add assistant placeholder
-                const assistantDiv = addChatMessage('assistant', '', true);
-                
-                // Use Puter.js to call Claude API
-                const response = await puter.ai.chat(message, {
-                    model: model,
-                    stream: true
-                });
-
-                let fullResponse = '';
-                
-                if (typeof response === 'string') {
-                    fullResponse = response;
-                    assistantDiv.querySelector('.message-content').textContent = fullResponse;
-                } else if (response && typeof response[Symbol.asyncIterator] === 'function') {
-                    for await (const chunk of response) {
-                        if (chunk?.text) {
-                            fullResponse += chunk.text;
-                            assistantDiv.querySelector('.message-content').textContent = fullResponse;
-                        }
-                    }
-                } else if (response?.message?.content) {
-                    fullResponse = response.message.content.map(c => c.text || '').join('');
-                    assistantDiv.querySelector('.message-content').textContent = fullResponse;
-                }
-
-                // Update request log with success
-                requestLog.latencyMs = Date.now() - startTime;
-                requestLog.status = 200;
-                requestLog.stopReason = 'end_turn';
-                requestLog.outputTokens = estimateTokens(fullResponse);
-                requestLog.cost = calculateCost(model, requestLog.inputTokens, requestLog.outputTokens);
+            
+            // Send message
+            const result = await ClaudeAPIManager.sendMessage(message, model);
+            
+            // Update UI
+            if (result.success) {
+                const content = assistantDiv.querySelector('.message-content');
+                content.innerHTML = result.response;
                 
                 appState.chatHistory.push(
                     { role: 'user', content: message },
-                    { role: 'assistant', content: fullResponse }
+                    { role: 'assistant', content: result.response }
                 );
-
-            } catch (error) {
-                console.error('API Error:', error);
-                
-                requestLog.latencyMs = Date.now() - startTime;
-                requestLog.status = error.status || 500;
-                requestLog.error = error.message;
-                
-                // Check if refundable
-                if (requestLog.status >= 500) {
-                    requestLog.isRefundable = true;
-                    requestLog.refundReason = `Service Availability (${requestLog.status} Error)`;
-                    requestLog.cost = calculateCost(model, requestLog.inputTokens, 0);
-                }
-
-                addChatMessage('error', `Error: ${error.message}`);
+            } else {
+                addChatMessage('error', `Error: ${result.error}`);
             }
 
             // Add to logs
-            appState.requestLogs.unshift(requestLog);
+            appState.addRequestLog(result.log);
             
             // Update UI
             updateStats();
             renderRequestLogs();
             renderRefundableEvents();
-            saveData();
+            
+            // Save will happen via auto-save
             
             sendBtn.disabled = false;
         }
@@ -466,34 +392,16 @@
             return div;
         }
 
-        function generateRequestId() {
-            return 'req_' + Math.random().toString(36).substr(2, 16);
-        }
-
-        function estimateTokens(text) {
-            // Rough estimation: ~4 chars per token
-            return Math.ceil(text.length / 4);
-        }
-
-        function calculateCost(model, inputTokens, outputTokens) {
-            const pricing = PRICING[model] || PRICING['claude-sonnet-4-20250514'];
-            return ((inputTokens / 1000) * pricing.input) + ((outputTokens / 1000) * pricing.output);
-        }
-
         function updateStats() {
             const total = appState.requestLogs.length;
-            const refundable = appState.requestLogs.filter(l => l.isRefundable);
-            const totalCost = appState.requestLogs.reduce((sum, l) => sum + (l.cost || 0), 0);
-            const disputed = refundable.reduce((sum, l) => sum + (l.cost || 0), 0);
+            const refundable = appState.refundableEvents;
+            const totalCost = appState.totalSpent;
+            const disputed = appState.disputedValue;
 
             document.getElementById('totalRequests').textContent = total;
             document.getElementById('refundableEvents').textContent = refundable.length;
-            document.getElementById('totalSpent').textContent = '$' + totalCost.toFixed(2);
-            document.getElementById('disputedValue').textContent = '$' + disputed.toFixed(2);
-
-            appState.totalSpent = totalCost;
-            appState.disputedValue = disputed;
-            appState.refundableEvents = refundable;
+            document.getElementById('totalSpent').textContent = Utils.formatCurrency(totalCost);
+            document.getElementById('disputedValue').textContent = Utils.formatCurrency(disputed);
 
             // Update badge
             const badge = document.getElementById('refundableBadge');
@@ -506,7 +414,7 @@
 
             // Show threshold warning
             const warning = document.getElementById('thresholdWarning');
-            if (disputed > 0 && disputed < 5) {
+            if (disputed > 0 && disputed < CONFIG.minDisputeThreshold) {
                 warning.classList.remove('hidden');
             } else {
                 warning.classList.add('hidden');
@@ -525,9 +433,9 @@
                 return;
             }
 
-            container.innerHTML = appState.requestLogs.slice(0, 50).map(log => {
+            container.innerHTML = appState.requestLogs.slice(0, CONFIG.maxLogsDisplay).map(log => {
                 const statusColor = log.status === 200 ? 'bg-green-500' : log.status >= 500 ? 'bg-red-500' : 'bg-yellow-500';
-                const time = new Date(log.timestamp).toLocaleTimeString();
+                const time = Utils.formatTime(log.timestamp);
                 
                 return `
                     <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-3 hover:border-slate-600 transition-colors cursor-pointer" onclick="showLogDetail('${log.id}')">
@@ -550,7 +458,7 @@
 
         function renderRefundableEvents() {
             const container = document.getElementById('refundableEventsList');
-            const events = appState.requestLogs.filter(l => l.isRefundable);
+            const events = appState.refundableEvents;
 
             if (events.length === 0) {
                 container.innerHTML = `
@@ -582,7 +490,7 @@
                             ${events.map(e => `
                                 <tr class="border-b border-slate-700/50 hover:bg-slate-800/50">
                                     <td class="py-3 font-mono text-xs text-slate-300">${e.id}</td>
-                                    <td class="py-3 text-slate-400">${new Date(e.timestamp).toLocaleString()}</td>
+                                    <td class="py-3 text-slate-400">${Utils.formatTimestamp(e.timestamp)}</td>
                                     <td class="py-3 text-slate-300">${e.model}</td>
                                     <td class="py-3"><span class="bg-red-600/20 text-red-400 px-2 py-0.5 rounded text-xs">${e.status}</span></td>
                                     <td class="py-3 text-slate-400">${e.refundReason}</td>
@@ -602,72 +510,14 @@
             alert(`Request Details:\n\nID: ${log.id}\nModel: ${log.model}\nStatus: ${log.status}\nLatency: ${log.latencyMs}ms\nInput Tokens: ${log.inputTokens}\nOutput Tokens: ${log.outputTokens}\nCost: $${log.cost.toFixed(4)}\nStop Reason: ${log.stopReason || 'N/A'}\nRefundable: ${log.isRefundable ? 'Yes - ' + log.refundReason : 'No'}`);
         }
 
-        function analyzeEligibility(logs) {
-            const eligibleClaims = [];
-
-            logs.forEach(log => {
-                // RULE 1: 5xx Service Failure
-                if (log.status >= 500) {
-                    eligibleClaims.push({
-                        id: log.id,
-                        reason: "Service Availability (5xx Error)",
-                        evidence: `HTTP ${log.status} received at ${log.timestamp}`,
-                        policyCite: "Commercial Terms: Service Availability / SLA",
-                        cost: log.cost
-                    });
-                }
-
-                // RULE 2: Ghost Stream (200 OK but incomplete)
-                if (log.status === 200 && !log.stopReason && log.outputTokens > 0) {
-                    eligibleClaims.push({
-                        id: log.id,
-                        reason: "Incomplete Delivery / Stream Interruption",
-                        evidence: "Stream terminated by server without 'end_turn' signal.",
-                        policyCite: "Billing Policy: Charges apply to successful completion. Delivery was incomplete.",
-                        cost: log.cost
-                    });
-                }
-            });
-
-            return eligibleClaims;
-        }
-
         function generateSupportPacket() {
-            const events = appState.requestLogs.filter(l => l.isRefundable);
+            const events = appState.refundableEvents;
             if (events.length === 0) {
                 alert('No refundable events to generate a packet for.');
                 return;
             }
 
-            const claims = analyzeEligibility(events);
-            const totalDisputed = claims.reduce((sum, c) => sum + c.cost, 0);
-            
-            const dateRange = events.length > 0 
-                ? `${new Date(events[events.length - 1].timestamp).toLocaleDateString()} - ${new Date(events[0].timestamp).toLocaleDateString()}`
-                : 'N/A';
-
-            const serverInterruptions = claims.filter(c => c.reason.includes('Incomplete')).length;
-            const serviceErrors = claims.filter(c => c.reason.includes('5xx')).length;
-
-            const coverLetter = `Subject: Billing Adjustment Request - ${dateRange} - User: ${appState.user?.email || appState.user?.username || 'Unknown'}
-
-To: Anthropic Support
-
-I am writing to request a billing adjustment regarding specific API interactions that failed to meet the Service Availability standards or resulted in incomplete delivery.
-
-Summary of Claim:
-- Total Incidents: ${claims.length}
-- Total Disputed Value: $${totalDisputed.toFixed(2)}
-
-Incident Types:
-1. Server-Side Interruption: ${serverInterruptions} requests where the API stream was terminated by the host without a \`stop_reason\` or completion signal, rendering the partial output unusable.
-2. Service Unavailable: ${serviceErrors} requests returning 5xx errors which may have resulted in erroneous credit deduction.
-
-Please see the attached \`request_ids.csv\` for the specific tracing IDs required for your engineering team to verify these server-side failures.
-
-Regards,
-${appState.user?.email || appState.user?.username || 'OpusAudit User'}`;
-
+            const coverLetter = RefundAnalyzer.generateCoverLetter(events, appState.user);
             document.getElementById('coverLetterPreview').textContent = coverLetter;
             document.getElementById('packetModal').classList.remove('hidden');
         }
@@ -677,56 +527,17 @@ ${appState.user?.email || appState.user?.username || 'OpusAudit User'}`;
         }
 
         function downloadPacket() {
-            const events = appState.requestLogs.filter(l => l.isRefundable);
-            
-            // Generate CSV
-            const csvHeader = 'timestamp_utc,request_id,model,http_status,error_type,estimated_cost\n';
-            const csvRows = events.map(e => 
-                `${e.timestamp},${e.id},${e.model},${e.status},${e.refundReason || 'null'},${e.cost.toFixed(4)}`
-            ).join('\n');
-            
-            const csv = csvHeader + csvRows;
-            
-            // Download CSV
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `opusaudit_request_ids_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
-
-            // Download cover letter
-            const coverLetter = document.getElementById('coverLetterPreview').textContent;
-            const txtBlob = new Blob([coverLetter], { type: 'text/plain' });
-            const txtUrl = URL.createObjectURL(txtBlob);
-            const txtA = document.createElement('a');
-            txtA.href = txtUrl;
-            txtA.download = `opusaudit_cover_letter_${new Date().toISOString().split('T')[0]}.txt`;
-            txtA.click();
-            URL.revokeObjectURL(txtUrl);
-
-            closeModal();
+            try {
+                ExportManager.downloadSupportPacket();
+                closeModal();
+            } catch (error) {
+                alert(error.message);
+            }
         }
 
         async function saveToCloud() {
             try {
-                const events = appState.requestLogs.filter(l => l.isRefundable);
-                const coverLetter = document.getElementById('coverLetterPreview').textContent;
-                
-                // Generate CSV content
-                const csvHeader = 'timestamp_utc,request_id,model,http_status,error_type,estimated_cost\n';
-                const csvRows = events.map(e => 
-                    `${e.timestamp},${e.id},${e.model},${e.status},${e.refundReason || 'null'},${e.cost.toFixed(4)}`
-                ).join('\n');
-                const csv = csvHeader + csvRows;
-
-                const dateStr = new Date().toISOString().split('T')[0];
-                
-                // Save to Puter cloud
-                await puter.fs.write(`opusaudit_request_ids_${dateStr}.csv`, csv);
-                await puter.fs.write(`opusaudit_cover_letter_${dateStr}.txt`, coverLetter);
-                
+                await ExportManager.savePacketToCloud();
                 alert('Files saved to your Puter cloud storage!');
                 closeModal();
             } catch (error) {
@@ -736,24 +547,11 @@ ${appState.user?.email || appState.user?.username || 'OpusAudit User'}`;
         }
 
         function exportLogs() {
-            if (appState.requestLogs.length === 0) {
-                alert('No logs to export.');
-                return;
+            try {
+                ExportManager.exportAllLogs();
+            } catch (error) {
+                alert(error.message);
             }
-
-            const csvHeader = 'timestamp_utc,request_id,model,http_status,stop_reason,input_tokens,output_tokens,latency_ms,cost_usd,is_refundable,refund_reason\n';
-            const csvRows = appState.requestLogs.map(e => 
-                `${e.timestamp},${e.id},${e.model},${e.status},${e.stopReason || 'null'},${e.inputTokens},${e.outputTokens},${e.latencyMs},${e.cost.toFixed(4)},${e.isRefundable},${e.refundReason || ''}`
-            ).join('\n');
-            
-            const csv = csvHeader + csvRows;
-            const blob = new Blob([csv], { type: 'text/csv' });
-            const url = URL.createObjectURL(blob);
-            const a = document.createElement('a');
-            a.href = url;
-            a.download = `opusaudit_all_logs_${new Date().toISOString().split('T')[0]}.csv`;
-            a.click();
-            URL.revokeObjectURL(url);
         }
 
         // Enter key to send
@@ -767,11 +565,11 @@ ${appState.user?.email || appState.user?.username || 'OpusAudit User'}`;
         // Check if already authenticated on load
         (async function init() {
             try {
-                const isSignedIn = await puter.auth.isSignedIn();
-                if (isSignedIn) {
-                    appState.user = await puter.auth.getUser();
+                const isAuthenticated = await AuthManager.checkAuth();
+                if (isAuthenticated) {
                     showDashboard();
-                    loadSavedData();
+                    await loadSavedData();
+                    window.OpusAudit.startAutoSave();
                 }
             } catch (error) {
                 console.log('Not signed in yet');

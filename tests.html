@@ -1,0 +1,421 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpusAudit - Test Suite</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <style>
+        .test-pass { color: #10b981; }
+        .test-fail { color: #ef4444; }
+        .test-pending { color: #f59e0b; }
+    </style>
+</head>
+<body class="bg-gray-900 text-gray-100 p-8">
+    <div class="max-w-4xl mx-auto">
+        <h1 class="text-3xl font-bold mb-6">OpusAudit Test Suite</h1>
+        
+        <div class="mb-6">
+            <div class="flex gap-4 mb-4">
+                <button onclick="runAllTests()" class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded">Run All Tests</button>
+                <button onclick="clearResults()" class="bg-gray-600 hover:bg-gray-700 px-4 py-2 rounded">Clear Results</button>
+            </div>
+            <div id="summary" class="bg-gray-800 p-4 rounded mb-4"></div>
+        </div>
+        
+        <div id="testResults" class="space-y-2"></div>
+    </div>
+
+    <script src="puter.js"></script>
+    <script>
+        // Mock Puter.js for testing
+        const mockPuter = {
+            kv: {
+                storage: {},
+                async set(key, value) {
+                    this.storage[key] = value;
+                    return true;
+                },
+                async get(key) {
+                    return this.storage[key] || null;
+                }
+            },
+            auth: {
+                currentUser: null,
+                async signIn() {
+                    this.currentUser = { email: 'test@example.com', username: 'testuser' };
+                    return this.currentUser;
+                },
+                async signOut() {
+                    this.currentUser = null;
+                },
+                async isSignedIn() {
+                    return this.currentUser !== null;
+                },
+                async getUser() {
+                    return this.currentUser;
+                }
+            },
+            ai: {
+                async chat(message, options) {
+                    // Mock streaming response
+                    return {
+                        async *[Symbol.asyncIterator]() {
+                            const response = `Mock response to: ${message}`;
+                            for (let i = 0; i < response.length; i += 10) {
+                                yield { text: response.substring(i, i + 10) };
+                            }
+                        }
+                    };
+                }
+            },
+            fs: {
+                files: {},
+                async write(filename, content) {
+                    this.files[filename] = content;
+                    return true;
+                }
+            }
+        };
+
+        // Use mock in tests
+        if (typeof window !== 'undefined') {
+            window.puter = mockPuter;
+        }
+
+        // Test Framework
+        class TestRunner {
+            constructor() {
+                this.tests = [];
+                this.results = [];
+            }
+
+            test(name, fn) {
+                this.tests.push({ name, fn });
+            }
+
+            async run() {
+                this.results = [];
+                const startTime = Date.now();
+
+                for (const test of this.tests) {
+                    try {
+                        await test.fn();
+                        this.results.push({ name: test.name, status: 'pass', error: null });
+                        this.logResult(test.name, 'pass');
+                    } catch (error) {
+                        this.results.push({ name: test.name, status: 'fail', error: error.message });
+                        this.logResult(test.name, 'fail', error.message);
+                    }
+                }
+
+                const duration = Date.now() - startTime;
+                this.showSummary(duration);
+            }
+
+            logResult(name, status, error = null) {
+                const resultsDiv = document.getElementById('testResults');
+                const div = document.createElement('div');
+                div.className = `p-3 rounded ${status === 'pass' ? 'bg-green-900/20' : 'bg-red-900/20'}`;
+                div.innerHTML = `
+                    <div class="flex items-center justify-between">
+                        <span class="${status === 'pass' ? 'test-pass' : 'test-fail'}">${status === 'pass' ? '✓' : '✗'} ${name}</span>
+                        <span class="text-sm text-gray-400">${status}</span>
+                    </div>
+                    ${error ? `<div class="text-red-400 text-sm mt-2">${error}</div>` : ''}
+                `;
+                resultsDiv.appendChild(div);
+            }
+
+            showSummary(duration) {
+                const passed = this.results.filter(r => r.status === 'pass').length;
+                const failed = this.results.filter(r => r.status === 'fail').length;
+                const total = this.results.length;
+
+                const summaryDiv = document.getElementById('summary');
+                summaryDiv.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <div>
+                            <span class="test-pass font-bold">${passed} passed</span>
+                            <span class="mx-2">|</span>
+                            <span class="test-fail font-bold">${failed} failed</span>
+                            <span class="mx-2">|</span>
+                            <span class="text-gray-400">${total} total</span>
+                        </div>
+                        <div class="text-gray-400 text-sm">
+                            Duration: ${duration}ms
+                        </div>
+                    </div>
+                `;
+            }
+        }
+
+        // Assertion helpers
+        function assertEquals(actual, expected, message) {
+            if (actual !== expected) {
+                throw new Error(message || `Expected ${expected} but got ${actual}`);
+            }
+        }
+
+        function assertTrue(value, message) {
+            if (!value) {
+                throw new Error(message || `Expected truthy value but got ${value}`);
+            }
+        }
+
+        function assertFalse(value, message) {
+            if (value) {
+                throw new Error(message || `Expected falsy value but got ${value}`);
+            }
+        }
+
+        function assertThrows(fn, message) {
+            let threw = false;
+            try {
+                fn();
+            } catch (e) {
+                threw = true;
+            }
+            if (!threw) {
+                throw new Error(message || 'Expected function to throw but it did not');
+            }
+        }
+
+        // Test Suite
+        const runner = new TestRunner();
+
+        // AppState Tests
+        runner.test('AppState: should initialize with default values', () => {
+            const state = new window.OpusAudit.appState.constructor();
+            assertEquals(state.user, null);
+            assertEquals(state.requestLogs.length, 0);
+            assertEquals(state.totalSpent, 0);
+        });
+
+        runner.test('AppState: should reset state correctly', () => {
+            const state = new window.OpusAudit.appState.constructor();
+            state.user = { email: 'test@test.com' };
+            state.requestLogs = [{ id: '1' }];
+            state.reset();
+            assertEquals(state.user, null);
+            assertEquals(state.requestLogs.length, 0);
+        });
+
+        runner.test('AppState: should update metrics correctly', () => {
+            const state = new window.OpusAudit.appState.constructor();
+            state.requestLogs = [
+                { cost: 0.01, isRefundable: false },
+                { cost: 0.02, isRefundable: true },
+                { cost: 0.03, isRefundable: true }
+            ];
+            state.updateMetrics();
+            assertEquals(state.totalSpent, 0.06);
+            assertEquals(state.disputedValue, 0.05);
+            assertEquals(state.refundableEvents.length, 2);
+        });
+
+        // Utils Tests
+        runner.test('Utils: generateRequestId should return unique IDs', () => {
+            const id1 = window.OpusAudit.Utils.generateRequestId();
+            const id2 = window.OpusAudit.Utils.generateRequestId();
+            assertTrue(id1 !== id2, 'Request IDs should be unique');
+            assertTrue(id1.startsWith('req_'), 'Request ID should start with req_');
+        });
+
+        runner.test('Utils: estimateTokens should calculate correctly', () => {
+            const text = 'This is a test message';
+            const tokens = window.OpusAudit.Utils.estimateTokens(text);
+            assertTrue(tokens > 0, 'Should return positive token count');
+            assertEquals(tokens, Math.ceil(text.length / 4));
+        });
+
+        runner.test('Utils: calculateCost should compute correct pricing', () => {
+            const cost = window.OpusAudit.Utils.calculateCost('claude-sonnet-4-20250514', 1000, 1000);
+            assertEquals(cost, 0.003 + 0.015); // 0.018
+        });
+
+        runner.test('Utils: formatCurrency should format correctly', () => {
+            assertEquals(window.OpusAudit.Utils.formatCurrency(10.5), '$10.50');
+            assertEquals(window.OpusAudit.Utils.formatCurrency(0.1234), '$0.12');
+        });
+
+        // StorageManager Tests
+        runner.test('StorageManager: should save and load data', async () => {
+            window.OpusAudit.appState.requestLogs = [
+                { id: 'test1', cost: 0.01 },
+                { id: 'test2', cost: 0.02 }
+            ];
+            
+            await window.OpusAudit.StorageManager.save();
+            
+            // Clear state
+            window.OpusAudit.appState.requestLogs = [];
+            
+            // Load back
+            const loaded = await window.OpusAudit.StorageManager.load();
+            assertTrue(loaded, 'Should successfully load data');
+            assertEquals(window.OpusAudit.appState.requestLogs.length, 2);
+        });
+
+        runner.test('StorageManager: should handle empty storage', async () => {
+            mockPuter.kv.storage = {};
+            const loaded = await window.OpusAudit.StorageManager.load();
+            assertFalse(loaded, 'Should return false for empty storage');
+        });
+
+        // AuthManager Tests
+        runner.test('AuthManager: should sign in successfully', async () => {
+            const user = await window.OpusAudit.AuthManager.signIn();
+            assertTrue(user !== null, 'Should return user object');
+            assertEquals(user.email, 'test@example.com');
+        });
+
+        runner.test('AuthManager: should sign out successfully', async () => {
+            await window.OpusAudit.AuthManager.signIn();
+            await window.OpusAudit.AuthManager.signOut();
+            assertEquals(window.OpusAudit.appState.user, null);
+        });
+
+        runner.test('AuthManager: should check auth status', async () => {
+            await window.OpusAudit.AuthManager.signIn();
+            const isSignedIn = await window.OpusAudit.AuthManager.checkAuth();
+            assertTrue(isSignedIn, 'Should be signed in');
+        });
+
+        // ClaudeAPIManager Tests
+        runner.test('ClaudeAPIManager: should send message successfully', async () => {
+            const result = await window.OpusAudit.ClaudeAPIManager.sendMessage('Hello', 'claude-sonnet-4-20250514');
+            assertTrue(result.success, 'Should succeed');
+            assertTrue(result.response.includes('Mock response'), 'Should return mock response');
+            assertEquals(result.log.status, 200);
+        });
+
+        runner.test('ClaudeAPIManager: should log request details', async () => {
+            const result = await window.OpusAudit.ClaudeAPIManager.sendMessage('Test message');
+            assertTrue(result.log.id.startsWith('req_'), 'Log should have request ID');
+            assertTrue(result.log.inputTokens > 0, 'Should have input tokens');
+            assertTrue(result.log.latencyMs >= 0, 'Should have latency');
+        });
+
+        // RefundAnalyzer Tests
+        runner.test('RefundAnalyzer: should identify 5xx errors as refundable', () => {
+            const logs = [
+                { id: '1', status: 500, cost: 0.01, outputTokens: 0 },
+                { id: '2', status: 200, cost: 0.01, stopReason: 'end_turn', outputTokens: 100 }
+            ];
+            const claims = window.OpusAudit.RefundAnalyzer.analyzeEligibility(logs);
+            assertEquals(claims.length, 1);
+            assertTrue(claims[0].reason.includes('Service Availability'));
+        });
+
+        runner.test('RefundAnalyzer: should identify incomplete streams', () => {
+            const logs = [
+                { id: '1', status: 200, cost: 0.01, stopReason: null, outputTokens: 50 }
+            ];
+            const claims = window.OpusAudit.RefundAnalyzer.analyzeEligibility(logs);
+            assertEquals(claims.length, 1);
+            assertTrue(claims[0].reason.includes('Incomplete Delivery'));
+        });
+
+        runner.test('RefundAnalyzer: should identify zero output with charges', () => {
+            const logs = [
+                { id: '1', status: 200, cost: 0.01, stopReason: 'end_turn', outputTokens: 0 }
+            ];
+            const claims = window.OpusAudit.RefundAnalyzer.analyzeEligibility(logs);
+            assertEquals(claims.length, 1);
+            assertTrue(claims[0].reason.includes('Zero Output'));
+        });
+
+        runner.test('RefundAnalyzer: should generate cover letter', () => {
+            const events = [
+                { id: '1', status: 500, cost: 0.01, timestamp: new Date().toISOString(), outputTokens: 0 }
+            ];
+            const user = { email: 'test@example.com' };
+            const letter = window.OpusAudit.RefundAnalyzer.generateCoverLetter(events, user);
+            assertTrue(letter.includes('test@example.com'), 'Should include user email');
+            assertTrue(letter.includes('Total Incidents: 1'), 'Should include incident count');
+        });
+
+        runner.test('RefundAnalyzer: should generate CSV correctly', () => {
+            const events = [
+                { 
+                    id: 'req_123', 
+                    timestamp: '2026-01-01T00:00:00Z',
+                    model: 'claude-sonnet-4',
+                    status: 500,
+                    refundReason: 'Service Error',
+                    cost: 0.0123
+                }
+            ];
+            const csv = window.OpusAudit.RefundAnalyzer.generateCSV(events, false);
+            assertTrue(csv.includes('req_123'), 'Should include request ID');
+            assertTrue(csv.includes('0.0123'), 'Should include cost');
+        });
+
+        // ExportManager Tests
+        runner.test('ExportManager: should throw error for empty logs', () => {
+            window.OpusAudit.appState.requestLogs = [];
+            assertThrows(() => {
+                window.OpusAudit.ExportManager.exportAllLogs();
+            }, 'Should throw error for empty logs');
+        });
+
+        runner.test('ExportManager: should save packet to cloud', async () => {
+            window.OpusAudit.appState.refundableEvents = [
+                { 
+                    id: 'req_123',
+                    timestamp: new Date().toISOString(),
+                    model: 'test',
+                    status: 500,
+                    cost: 0.01,
+                    refundReason: 'Error'
+                }
+            ];
+            window.OpusAudit.appState.user = { email: 'test@test.com' };
+            
+            await window.OpusAudit.ExportManager.savePacketToCloud();
+            
+            const files = Object.keys(mockPuter.fs.files);
+            assertTrue(files.length >= 2, 'Should save at least 2 files');
+        });
+
+        // Integration Tests
+        runner.test('Integration: Complete workflow simulation', async () => {
+            // Sign in
+            await window.OpusAudit.AuthManager.signIn();
+            assertTrue(window.OpusAudit.appState.user !== null);
+            
+            // Send message
+            const result = await window.OpusAudit.ClaudeAPIManager.sendMessage('Test');
+            assertTrue(result.success);
+            
+            // Add to logs
+            window.OpusAudit.appState.addRequestLog(result.log);
+            assertEquals(window.OpusAudit.appState.requestLogs.length, 1);
+            
+            // Save data
+            await window.OpusAudit.StorageManager.save();
+            
+            // Sign out
+            await window.OpusAudit.AuthManager.signOut();
+            assertEquals(window.OpusAudit.appState.user, null);
+        });
+
+        // Run tests
+        async function runAllTests() {
+            clearResults();
+            await runner.run();
+        }
+
+        function clearResults() {
+            document.getElementById('testResults').innerHTML = '';
+            document.getElementById('summary').innerHTML = '';
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            console.log('Test suite loaded. Click "Run All Tests" to begin.');
+        });
+    </script>
+</body>
+</html>
