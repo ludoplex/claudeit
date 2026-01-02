@@ -1,6 +1,6 @@
-# Contributing to OpusAudit
+# Contributing to ClaudeIt
 
-First off, thank you for considering contributing to OpusAudit! It's people like you that make OpusAudit such a great tool.
+First off, thank you for considering contributing to ClaudeIt! It's people like you that make ClaudeIt such a great tool.
 
 ## Code of Conduct
 

@@ -1,4 +1,4 @@
-# OpusAudit Usage Guide
+# ClaudeIt Usage Guide
 
 ## Quick Start
 

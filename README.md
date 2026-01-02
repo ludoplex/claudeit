@@ -1,12 +1,12 @@
-# OpusAudit - Claude API Billing Monitor
+# ClaudeIt - Claude API Billing Monitor
 
 ![CI](https://github.com/ludoplex/claudeit/workflows/CI/badge.svg)
 
-OpusAudit is a comprehensive audit logging and billing monitor for the Anthropic Claude API. It helps you track API usage, costs, and maintain detailed logs that can be used for refund claims per Anthropic's Terms of Service.
+ClaudeIt is a comprehensive audit logging and billing monitor for the Anthropic Claude API. It helps you track API usage, costs, and maintain detailed logs that can be used for refund claims per Anthropic's Terms of Service.
 
 ## Two Implementations Available
 
-OpusAudit comes in two distinct implementations to suit different needs:
+ClaudeIt comes in two distinct implementations to suit different needs:
 
 ### 🔧 Full Implementation (index.html + app.js)
 - Complete audit logging with detailed metadata
@@ -24,8 +24,8 @@ OpusAudit comes in two distinct implementations to suit different needs:
 - **Best for:** Quick testing, personal use, learning
 
 📦 **Download Ready-to-Use Packages:**
-- [`implementations/opusaudit-full.zip`](implementations/opusaudit-full.zip) - Complete implementation
-- [`implementations/opusaudit-lite.zip`](implementations/opusaudit-lite.zip) - Lightweight version
+- [`implementations/claudeit-full.zip`](implementations/claudeit-full.zip) - Complete implementation
+- [`implementations/claudeit-lite.zip`](implementations/claudeit-lite.zip) - Lightweight version
 
 See [implementations/README.md](implementations/README.md) for detailed comparison.
 
@@ -88,7 +88,7 @@ Deploy to any static hosting service like:
 
 ## Supported Models
 
-OpusAudit supports all current Claude models with accurate pricing:
+ClaudeIt supports all current Claude models with accurate pricing:
 
 - Claude 3.5 Sonnet (20241022 & 20240620)
 - Claude 3 Opus (20240229)
@@ -141,7 +141,7 @@ The project includes GitHub Actions workflows for:
 
 ## Refund Documentation
 
-OpusAudit helps you maintain the documentation needed for legitimate refund claims per Anthropic's ToS. Each log entry includes:
+ClaudeIt helps you maintain the documentation needed for legitimate refund claims per Anthropic's ToS. Each log entry includes:
 
 - **Timestamp**: Exact date and time of the request
 - **Request Details**: Full prompt and parameters sent
@@ -181,7 +181,7 @@ Contributions are welcome! Please feel free to submit a Pull Request.
 
 ## Disclaimer
 
-OpusAudit is an independent tool and is not affiliated with, endorsed by, or connected to Anthropic PBC. This tool is provided as-is for monitoring and audit purposes only. Users are responsible for complying with Anthropic's Terms of Service and API usage policies.
+ClaudeIt is an independent tool and is not affiliated with, endorsed by, or connected to Anthropic PBC. This tool is provided as-is for monitoring and audit purposes only. Users are responsible for complying with Anthropic's Terms of Service and API usage policies.
 
 ## Support
 

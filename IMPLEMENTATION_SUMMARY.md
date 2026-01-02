@@ -1,8 +1,8 @@
-# OpusAudit - Implementation Summary
+# ClaudeIt - Implementation Summary
 
 ## Project Overview
 
-OpusAudit is a Puter.js application designed for auditing Anthropic Claude API usage, logging, and documenting everything needed for legitimate refunds per Anthropic Terms of Service.
+ClaudeIt is a Puter.js application designed for auditing Anthropic Claude API usage, logging, and documenting everything needed for legitimate refunds per Anthropic Terms of Service.
 
 ## Deliverables
 
@@ -10,7 +10,7 @@ OpusAudit is a Puter.js application designed for auditing Anthropic Claude API u
 
 #### 1. Full Implementation
 **Files:** `index.html`, `app.js` (also in `implementations/index-full.html`, `implementations/app-full.js`)
-**Package:** `implementations/opusaudit-full.zip` (5.7KB)
+**Package:** `implementations/claudeit-full.zip` (5.7KB)
 
 **Features:**
 - Complete audit logging system with full metadata
@@ -35,7 +35,7 @@ OpusAudit is a Puter.js application designed for auditing Anthropic Claude API u
 
 #### 2. Lite Implementation
 **Files:** `implementations/index-lite.html`, `implementations/app-lite.js`
-**Package:** `implementations/opusaudit-lite.zip` (3.8KB)
+**Package:** `implementations/claudeit-lite.zip` (3.8KB)
 
 **Features:**
 - Minimal, fast interface
@@ -177,8 +177,8 @@ claudeit/
 │   ├── app-lite.js                  # Lite implementation JS
 │   ├── index-full.html              # Full implementation HTML
 │   ├── index-lite.html              # Lite implementation HTML
-│   ├── opusaudit-full.zip          # Full package (5.7KB)
-│   └── opusaudit-lite.zip          # Lite package (3.8KB)
+│   ├── claudeit-full.zip          # Full package (5.7KB)
+│   └── claudeit-lite.zip          # Lite package (3.8KB)
 ├── tests/
 │   ├── app.test.js                  # 23 unit tests
 │   └── setup.js                     # Jest configuration

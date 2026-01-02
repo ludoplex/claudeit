@@ -1,5 +1,5 @@
 /**
- * OpusAudit Lite - Minimal Claude API Monitor
+ * ClaudeIt Lite - Minimal Claude API Monitor
  * Simplified version for quick logging
  */
 
@@ -223,7 +223,7 @@ function exportJSON() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `opusaudit-lite-${Date.now()}.json`;
+    a.download = `claudeit-lite-${Date.now()}.json`;
     a.click();
     URL.revokeObjectURL(url);
 }

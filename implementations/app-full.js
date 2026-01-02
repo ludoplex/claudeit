@@ -1,9 +1,9 @@
 /**
- * OpusAudit - Claude API Billing Monitor
+ * ClaudeIt - Claude API Billing Monitor
  * Audit logging for Anthropic API usage per ToS refund requirements
  */
 
-class OpusAudit {
+class ClaudeIt {
     constructor() {
         this.apiKey = null;
         this.logs = [];
@@ -34,9 +34,9 @@ class OpusAudit {
             this.updateUI();
             
             this.initialized = true;
-            console.log('OpusAudit initialized successfully');
+            console.log('ClaudeIt initialized successfully');
         } catch (error) {
-            console.error('Failed to initialize OpusAudit:', error);
+            console.error('Failed to initialize ClaudeIt:', error);
             alert('Failed to initialize application. Please refresh the page.');
         }
     }
@@ -402,11 +402,11 @@ class OpusAudit {
                     stats: this.stats,
                     logs: this.logs
                 }, null, 2);
-                filename = `opusaudit-logs-${Date.now()}.json`;
+                filename = `claudeit-logs-${Date.now()}.json`;
                 mimeType = 'application/json';
             } else if (format === 'csv') {
                 content = this.logsToCSV();
-                filename = `opusaudit-logs-${Date.now()}.csv`;
+                filename = `claudeit-logs-${Date.now()}.csv`;
                 mimeType = 'text/csv';
             }
 
@@ -490,11 +490,11 @@ class OpusAudit {
 
 // Export for testing (if in Node.js environment)
 if (typeof module !== 'undefined' && module.exports) {
-    module.exports = OpusAudit;
+    module.exports = ClaudeIt;
 }
 
 // Initialize the application (browser only)
 if (typeof window !== 'undefined') {
-    const app = new OpusAudit();
+    const app = new ClaudeIt();
     app.init();
 }

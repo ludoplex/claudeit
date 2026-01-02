@@ -1,6 +1,6 @@
-# OpusAudit Implementations
+# ClaudeIt Implementations
 
-This directory contains two distinct implementations of the OpusAudit application:
+This directory contains two distinct implementations of the ClaudeIt application:
 
 ## 1. Full Implementation (`index-full.html` + `app-full.js`)
 
@@ -57,8 +57,8 @@ Deploy to any static hosting service (GitHub Pages, Netlify, Vercel, etc.)
 ## Downloading Implementations
 
 Both implementations are available as standalone zip files:
-- `opusaudit-full.zip` - Complete implementation
-- `opusaudit-lite.zip` - Lightweight implementation
+- `claudeit-full.zip` - Complete implementation
+- `claudeit-lite.zip` - Lightweight implementation
 
 Extract and use the HTML file directly in your browser.
 

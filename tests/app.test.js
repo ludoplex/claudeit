@@ -3,9 +3,9 @@
  */
 
 const { describe, it, expect, beforeEach } = require('@jest/globals');
-const OpusAudit = require('../app.js');
+const ClaudeIt = require('../app.js');
 
-describe('OpusAudit', () => {
+describe('ClaudeIt', () => {
   let app;
 
   beforeEach(() => {
@@ -30,7 +30,7 @@ describe('OpusAudit', () => {
       <div id="logs-container"></div>
     `;
 
-    app = new OpusAudit();
+    app = new ClaudeIt();
   });
 
   describe('Initialization', () => {

@@ -1,5 +1,5 @@
 {
-  "name": "opusaudit",
+  "name": "claudeit",
   "version": "1.0.0",
   "description": "Claude API Billing Monitor & Audit Logger for tracking Anthropic API usage",
   "main": "app.js",
