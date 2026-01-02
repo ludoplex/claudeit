@@ -1,0 +1,782 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OpusAudit - Claude API Billing Monitor</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://js.puter.com/v2/"></script>
+    <style>
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(59, 130, 246, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(59, 130, 246, 0.8); }
+        }
+        .pulse-glow { animation: pulse-glow 2s infinite; }
+        .gradient-bg {
+            background: linear-gradient(135deg, #0f172a 0%, #1e293b 50%, #0f172a 100%);
+        }
+        .card-gradient {
+            background: linear-gradient(180deg, rgba(30, 41, 59, 0.8) 0%, rgba(15, 23, 42, 0.9) 100%);
+        }
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+        }
+        .scrollbar-thin::-webkit-scrollbar { width: 6px; }
+        .scrollbar-thin::-webkit-scrollbar-track { background: #1e293b; }
+        .scrollbar-thin::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+    </style>
+</head>
+<body class="gradient-bg min-h-screen text-gray-100">
+    <!-- Auth Screen -->
+    <div id="authScreen" class="min-h-screen flex items-center justify-center p-4">
+        <div class="card-gradient border border-slate-700 rounded-2xl p-8 max-w-md w-full shadow-2xl">
+            <div class="text-center mb-8">
+                <div class="inline-flex items-center justify-center w-16 h-16 bg-blue-600/20 rounded-full mb-4">
+                    <svg class="w-8 h-8 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">OpusAudit</h1>
+                <p class="text-slate-400 mt-2">Claude API Billing Monitor & Evidence Collector</p>
+            </div>
+            
+            <div class="space-y-4">
+                <button onclick="signInWithPuter()" class="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-semibold py-3 px-6 rounded-xl transition-all duration-200 flex items-center justify-center gap-3 pulse-glow">
+                    <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm-2 15l-5-5 1.41-1.41L10 14.17l7.59-7.59L19 8l-9 9z"/>
+                    </svg>
+                    Sign in with Puter
+                </button>
+                <p class="text-xs text-slate-500 text-center">Secure cloud authentication via Puter.js</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main Dashboard -->
+    <div id="dashboard" class="hidden">
+        <!-- Header -->
+        <header class="border-b border-slate-700 bg-slate-900/50 backdrop-blur-sm sticky top-0 z-50">
+            <div class="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
+                <div class="flex items-center gap-3">
+                    <div class="w-10 h-10 bg-blue-600/20 rounded-lg flex items-center justify-center">
+                        <svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                        </svg>
+                    </div>
+                    <div>
+                        <h1 class="text-xl font-bold text-white">OpusAudit</h1>
+                        <p class="text-xs text-slate-400">Gateway Status: <span id="gatewayStatus" class="text-green-400">● Active</span></p>
+                    </div>
+                </div>
+                <div class="flex items-center gap-4">
+                    <div class="text-right">
+                        <p class="text-sm text-slate-400">Signed in as</p>
+                        <p id="userEmail" class="text-sm font-medium text-white">user@example.com</p>
+                    </div>
+                    <button onclick="signOut()" class="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                        <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </header>
+
+        <!-- Stats Cards -->
+        <div class="max-w-7xl mx-auto px-4 py-6">
+            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+                <div class="card-gradient border border-slate-700 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-slate-400 text-sm">Total Requests</span>
+                        <div class="w-8 h-8 bg-blue-600/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p id="totalRequests" class="text-3xl font-bold text-white">0</p>
+                </div>
+                
+                <div class="card-gradient border border-slate-700 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-slate-400 text-sm">Refundable Events</span>
+                        <div class="w-8 h-8 bg-red-600/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p id="refundableEvents" class="text-3xl font-bold text-red-400">0</p>
+                </div>
+                
+                <div class="card-gradient border border-slate-700 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-slate-400 text-sm">Total Spent</span>
+                        <div class="w-8 h-8 bg-green-600/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p id="totalSpent" class="text-3xl font-bold text-white">$0.00</p>
+                </div>
+                
+                <div class="card-gradient border border-slate-700 rounded-xl p-5">
+                    <div class="flex items-center justify-between mb-3">
+                        <span class="text-slate-400 text-sm">Disputed Value</span>
+                        <div class="w-8 h-8 bg-yellow-600/20 rounded-lg flex items-center justify-center">
+                            <svg class="w-4 h-4 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+                            </svg>
+                        </div>
+                    </div>
+                    <p id="disputedValue" class="text-3xl font-bold text-yellow-400">$0.00</p>
+                </div>
+            </div>
+
+            <!-- Main Content Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Chat Interface -->
+                <div class="lg:col-span-2 card-gradient border border-slate-700 rounded-xl overflow-hidden flex flex-col" style="height: 600px;">
+                    <div class="border-b border-slate-700 px-5 py-4 flex items-center justify-between">
+                        <h2 class="font-semibold text-white">Claude API Gateway</h2>
+                        <div class="flex items-center gap-2">
+                            <select id="modelSelect" class="bg-slate-800 border border-slate-600 rounded-lg px-3 py-1.5 text-sm text-white">
+                                <option value="claude-sonnet-4-20250514">Claude Sonnet 4</option>
+                                <option value="claude-3-5-haiku-20241022">Claude 3.5 Haiku</option>
+                                <option value="claude-3-7-sonnet-20250219">Claude 3.7 Sonnet</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div id="chatMessages" class="flex-1 overflow-y-auto p-5 space-y-4 scrollbar-thin">
+                        <div class="text-center text-slate-500 py-8">
+                            <svg class="w-12 h-12 mx-auto mb-3 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                            </svg>
+                            <p>Send a message to start monitoring API calls</p>
+                            <p class="text-xs mt-2">All requests are logged with full headers and response data</p>
+                        </div>
+                    </div>
+                    
+                    <div class="border-t border-slate-700 p-4">
+                        <div class="flex gap-3">
+                            <textarea id="messageInput" placeholder="Type your message..." rows="2" class="flex-1 bg-slate-800 border border-slate-600 rounded-xl px-4 py-3 text-white placeholder-slate-500 resize-none focus:outline-none focus:border-blue-500 transition-colors"></textarea>
+                            <button onclick="sendMessage()" id="sendBtn" class="bg-blue-600 hover:bg-blue-500 text-white px-6 rounded-xl font-medium transition-colors flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed">
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                </svg>
+                                Send
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Request Logs -->
+                <div class="card-gradient border border-slate-700 rounded-xl overflow-hidden flex flex-col" style="height: 600px;">
+                    <div class="border-b border-slate-700 px-5 py-4 flex items-center justify-between">
+                        <h2 class="font-semibold text-white">Request Logs</h2>
+                        <button onclick="exportLogs()" class="text-xs bg-slate-700 hover:bg-slate-600 px-3 py-1.5 rounded-lg transition-colors">
+                            Export CSV
+                        </button>
+                    </div>
+                    
+                    <div id="requestLogs" class="flex-1 overflow-y-auto p-3 space-y-2 scrollbar-thin">
+                        <div class="text-center text-slate-500 py-8">
+                            <p class="text-sm">No requests logged yet</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Refundable Events Panel -->
+            <div class="mt-6 card-gradient border border-slate-700 rounded-xl overflow-hidden">
+                <div class="border-b border-slate-700 px-5 py-4 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <h2 class="font-semibold text-white">Refundable Events</h2>
+                        <span id="refundableBadge" class="hidden bg-red-600/20 text-red-400 text-xs px-2 py-1 rounded-full">0 events</span>
+                    </div>
+                    <button onclick="generateSupportPacket()" id="generatePacketBtn" class="bg-gradient-to-r from-yellow-600 to-orange-600 hover:from-yellow-500 hover:to-orange-500 text-white px-4 py-2 rounded-lg font-medium transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                        </svg>
+                        Generate Support Packet
+                    </button>
+                </div>
+                
+                <div id="refundableEventsList" class="p-4">
+                    <div class="text-center text-slate-500 py-6">
+                        <svg class="w-10 h-10 mx-auto mb-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-sm">No refundable events detected</p>
+                        <p class="text-xs text-slate-600 mt-1">5xx errors and incomplete streams will appear here</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Threshold Warning -->
+            <div id="thresholdWarning" class="hidden mt-4 bg-yellow-900/20 border border-yellow-700/50 rounded-xl p-4 flex items-center gap-3">
+                <svg class="w-5 h-5 text-yellow-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/>
+                </svg>
+                <p class="text-sm text-yellow-200">Your disputed amount is below $5.00. We recommend waiting until distinct failures exceed this threshold to avoid spamming support.</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Support Packet Modal -->
+    <div id="packetModal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm flex items-center justify-center z-50 p-4">
+        <div class="card-gradient border border-slate-700 rounded-2xl max-w-2xl w-full max-h-[80vh] overflow-hidden">
+            <div class="border-b border-slate-700 px-6 py-4 flex items-center justify-between">
+                <h3 class="text-lg font-semibold text-white">Support Packet Generated</h3>
+                <button onclick="closeModal()" class="p-2 hover:bg-slate-700 rounded-lg transition-colors">
+                    <svg class="w-5 h-5 text-slate-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                    </svg>
+                </button>
+            </div>
+            <div class="p-6 overflow-y-auto max-h-[60vh]">
+                <div class="mb-6">
+                    <h4 class="text-sm font-medium text-slate-400 mb-2">Cover Letter Preview</h4>
+                    <pre id="coverLetterPreview" class="bg-slate-900 border border-slate-700 rounded-lg p-4 text-sm text-slate-300 whitespace-pre-wrap overflow-x-auto"></pre>
+                </div>
+                <div class="flex gap-3">
+                    <button onclick="downloadPacket()" class="flex-1 bg-blue-600 hover:bg-blue-500 text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+                        </svg>
+                        Download Packet
+                    </button>
+                    <button onclick="saveToCloud()" class="flex-1 bg-slate-700 hover:bg-slate-600 text-white py-3 rounded-xl font-medium transition-colors flex items-center justify-center gap-2">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"/>
+                        </svg>
+                        Save to Puter Cloud
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Application State
+        let appState = {
+            user: null,
+            requestLogs: [],
+            refundableEvents: [],
+            chatHistory: [],
+            totalSpent: 0,
+            disputedValue: 0
+        };
+
+        // Pricing (per 1K tokens)
+        const PRICING = {
+            'claude-sonnet-4-20250514': { input: 0.003, output: 0.015 },
+            'claude-3-5-haiku-20241022': { input: 0.0008, output: 0.004 },
+            'claude-3-7-sonnet-20250219': { input: 0.003, output: 0.015 }
+        };
+
+        // Authentication
+        async function signInWithPuter() {
+            try {
+                const user = await puter.auth.signIn();
+                appState.user = user;
+                showDashboard();
+                loadSavedData();
+            } catch (error) {
+                console.error('Auth error:', error);
+                alert('Authentication failed. Please try again.');
+            }
+        }
+
+        async function signOut() {
+            try {
+                await puter.auth.signOut();
+                appState = {
+                    user: null,
+                    requestLogs: [],
+                    refundableEvents: [],
+                    chatHistory: [],
+                    totalSpent: 0,
+                    disputedValue: 0
+                };
+                document.getElementById('authScreen').classList.remove('hidden');
+                document.getElementById('dashboard').classList.add('hidden');
+            } catch (error) {
+                console.error('Sign out error:', error);
+            }
+        }
+
+        function showDashboard() {
+            document.getElementById('authScreen').classList.add('hidden');
+            document.getElementById('dashboard').classList.remove('hidden');
+            document.getElementById('userEmail').textContent = appState.user?.email || appState.user?.username || 'User';
+        }
+
+        // Load saved data from Puter KV
+        async function loadSavedData() {
+            try {
+                const logs = await puter.kv.get('opusaudit_logs');
+                if (logs) {
+                    appState.requestLogs = JSON.parse(logs);
+                    updateStats();
+                    renderRequestLogs();
+                    renderRefundableEvents();
+                }
+            } catch (error) {
+                console.error('Error loading saved data:', error);
+            }
+        }
+
+        // Save data to Puter KV
+        async function saveData() {
+            try {
+                await puter.kv.set('opusaudit_logs', JSON.stringify(appState.requestLogs));
+            } catch (error) {
+                console.error('Error saving data:', error);
+            }
+        }
+
+        // Send message through Claude API via Puter
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const model = document.getElementById('modelSelect').value;
+            const sendBtn = document.getElementById('sendBtn');
+            
+            sendBtn.disabled = true;
+            input.value = '';
+
+            // Add user message to chat
+            addChatMessage('user', message);
+            
+            // Create request log entry
+            const requestLog = {
+                id: generateRequestId(),
+                timestamp: new Date().toISOString(),
+                model: model,
+                inputTokens: estimateTokens(message),
+                status: 'PENDING',
+                stopReason: null,
+                outputTokens: 0,
+                cost: 0,
+                latencyMs: 0,
+                isRefundable: false,
+                refundReason: null
+            };
+
+            const startTime = Date.now();
+
+            try {
+                // Add assistant placeholder
+                const assistantDiv = addChatMessage('assistant', '', true);
+                
+                // Use Puter.js to call Claude API
+                const response = await puter.ai.chat(message, {
+                    model: model,
+                    stream: true
+                });
+
+                let fullResponse = '';
+                
+                if (typeof response === 'string') {
+                    fullResponse = response;
+                    assistantDiv.querySelector('.message-content').textContent = fullResponse;
+                } else if (response && typeof response[Symbol.asyncIterator] === 'function') {
+                    for await (const chunk of response) {
+                        if (chunk?.text) {
+                            fullResponse += chunk.text;
+                            assistantDiv.querySelector('.message-content').textContent = fullResponse;
+                        }
+                    }
+                } else if (response?.message?.content) {
+                    fullResponse = response.message.content.map(c => c.text || '').join('');
+                    assistantDiv.querySelector('.message-content').textContent = fullResponse;
+                }
+
+                // Update request log with success
+                requestLog.latencyMs = Date.now() - startTime;
+                requestLog.status = 200;
+                requestLog.stopReason = 'end_turn';
+                requestLog.outputTokens = estimateTokens(fullResponse);
+                requestLog.cost = calculateCost(model, requestLog.inputTokens, requestLog.outputTokens);
+                
+                appState.chatHistory.push(
+                    { role: 'user', content: message },
+                    { role: 'assistant', content: fullResponse }
+                );
+
+            } catch (error) {
+                console.error('API Error:', error);
+                
+                requestLog.latencyMs = Date.now() - startTime;
+                requestLog.status = error.status || 500;
+                requestLog.error = error.message;
+                
+                // Check if refundable
+                if (requestLog.status >= 500) {
+                    requestLog.isRefundable = true;
+                    requestLog.refundReason = `Service Availability (${requestLog.status} Error)`;
+                    requestLog.cost = calculateCost(model, requestLog.inputTokens, 0);
+                }
+
+                addChatMessage('error', `Error: ${error.message}`);
+            }
+
+            // Add to logs
+            appState.requestLogs.unshift(requestLog);
+            
+            // Update UI
+            updateStats();
+            renderRequestLogs();
+            renderRefundableEvents();
+            saveData();
+            
+            sendBtn.disabled = false;
+        }
+
+        function addChatMessage(role, content, isStreaming = false) {
+            const container = document.getElementById('chatMessages');
+            
+            // Remove placeholder if exists
+            const placeholder = container.querySelector('.text-center');
+            if (placeholder) placeholder.remove();
+
+            const div = document.createElement('div');
+            div.className = `flex ${role === 'user' ? 'justify-end' : 'justify-start'}`;
+            
+            const bgColor = role === 'user' ? 'bg-blue-600' : role === 'error' ? 'bg-red-600/20 border border-red-600/50' : 'bg-slate-700';
+            const textColor = role === 'error' ? 'text-red-300' : 'text-white';
+            
+            div.innerHTML = `
+                <div class="max-w-[80%] ${bgColor} rounded-2xl px-4 py-3 ${textColor}">
+                    <p class="message-content text-sm whitespace-pre-wrap">${content}${isStreaming ? '<span class="animate-pulse">▋</span>' : ''}</p>
+                </div>
+            `;
+            
+            container.appendChild(div);
+            container.scrollTop = container.scrollHeight;
+            
+            return div;
+        }
+
+        function generateRequestId() {
+            return 'req_' + Math.random().toString(36).substr(2, 16);
+        }
+
+        function estimateTokens(text) {
+            // Rough estimation: ~4 chars per token
+            return Math.ceil(text.length / 4);
+        }
+
+        function calculateCost(model, inputTokens, outputTokens) {
+            const pricing = PRICING[model] || PRICING['claude-sonnet-4-20250514'];
+            return ((inputTokens / 1000) * pricing.input) + ((outputTokens / 1000) * pricing.output);
+        }
+
+        function updateStats() {
+            const total = appState.requestLogs.length;
+            const refundable = appState.requestLogs.filter(l => l.isRefundable);
+            const totalCost = appState.requestLogs.reduce((sum, l) => sum + (l.cost || 0), 0);
+            const disputed = refundable.reduce((sum, l) => sum + (l.cost || 0), 0);
+
+            document.getElementById('totalRequests').textContent = total;
+            document.getElementById('refundableEvents').textContent = refundable.length;
+            document.getElementById('totalSpent').textContent = '$' + totalCost.toFixed(2);
+            document.getElementById('disputedValue').textContent = '$' + disputed.toFixed(2);
+
+            appState.totalSpent = totalCost;
+            appState.disputedValue = disputed;
+            appState.refundableEvents = refundable;
+
+            // Update badge
+            const badge = document.getElementById('refundableBadge');
+            if (refundable.length > 0) {
+                badge.classList.remove('hidden');
+                badge.textContent = `${refundable.length} event${refundable.length > 1 ? 's' : ''}`;
+            } else {
+                badge.classList.add('hidden');
+            }
+
+            // Show threshold warning
+            const warning = document.getElementById('thresholdWarning');
+            if (disputed > 0 && disputed < 5) {
+                warning.classList.remove('hidden');
+            } else {
+                warning.classList.add('hidden');
+            }
+        }
+
+        function renderRequestLogs() {
+            const container = document.getElementById('requestLogs');
+            
+            if (appState.requestLogs.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-slate-500 py-8">
+                        <p class="text-sm">No requests logged yet</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = appState.requestLogs.slice(0, 50).map(log => {
+                const statusColor = log.status === 200 ? 'bg-green-500' : log.status >= 500 ? 'bg-red-500' : 'bg-yellow-500';
+                const time = new Date(log.timestamp).toLocaleTimeString();
+                
+                return `
+                    <div class="bg-slate-800/50 border border-slate-700 rounded-lg p-3 hover:border-slate-600 transition-colors cursor-pointer" onclick="showLogDetail('${log.id}')">
+                        <div class="flex items-center justify-between mb-2">
+                            <div class="flex items-center gap-2">
+                                <span class="status-dot ${statusColor}"></span>
+                                <span class="text-xs font-mono text-slate-400">${log.id.slice(0, 12)}...</span>
+                            </div>
+                            <span class="text-xs text-slate-500">${time}</span>
+                        </div>
+                        <div class="flex items-center justify-between">
+                            <span class="text-xs text-slate-400">${log.model.split('-').slice(0, 2).join(' ')}</span>
+                            <span class="text-xs ${log.isRefundable ? 'text-red-400' : 'text-green-400'}">$${log.cost.toFixed(4)}</span>
+                        </div>
+                        ${log.isRefundable ? `<div class="mt-2 text-xs text-red-400 bg-red-900/20 rounded px-2 py-1">${log.refundReason}</div>` : ''}
+                    </div>
+                `;
+            }).join('');
+        }
+
+        function renderRefundableEvents() {
+            const container = document.getElementById('refundableEventsList');
+            const events = appState.requestLogs.filter(l => l.isRefundable);
+
+            if (events.length === 0) {
+                container.innerHTML = `
+                    <div class="text-center text-slate-500 py-6">
+                        <svg class="w-10 h-10 mx-auto mb-2 text-slate-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                        <p class="text-sm">No refundable events detected</p>
+                        <p class="text-xs text-slate-600 mt-1">5xx errors and incomplete streams will appear here</p>
+                    </div>
+                `;
+                return;
+            }
+
+            container.innerHTML = `
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead>
+                            <tr class="text-left text-slate-400 border-b border-slate-700">
+                                <th class="pb-3 font-medium">Request ID</th>
+                                <th class="pb-3 font-medium">Timestamp</th>
+                                <th class="pb-3 font-medium">Model</th>
+                                <th class="pb-3 font-medium">Status</th>
+                                <th class="pb-3 font-medium">Reason</th>
+                                <th class="pb-3 font-medium text-right">Est. Cost</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${events.map(e => `
+                                <tr class="border-b border-slate-700/50 hover:bg-slate-800/50">
+                                    <td class="py-3 font-mono text-xs text-slate-300">${e.id}</td>
+                                    <td class="py-3 text-slate-400">${new Date(e.timestamp).toLocaleString()}</td>
+                                    <td class="py-3 text-slate-300">${e.model}</td>
+                                    <td class="py-3"><span class="bg-red-600/20 text-red-400 px-2 py-0.5 rounded text-xs">${e.status}</span></td>
+                                    <td class="py-3 text-slate-400">${e.refundReason}</td>
+                                    <td class="py-3 text-right text-red-400">$${e.cost.toFixed(4)}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+
+        function showLogDetail(logId) {
+            const log = appState.requestLogs.find(l => l.id === logId);
+            if (!log) return;
+            
+            alert(`Request Details:\n\nID: ${log.id}\nModel: ${log.model}\nStatus: ${log.status}\nLatency: ${log.latencyMs}ms\nInput Tokens: ${log.inputTokens}\nOutput Tokens: ${log.outputTokens}\nCost: $${log.cost.toFixed(4)}\nStop Reason: ${log.stopReason || 'N/A'}\nRefundable: ${log.isRefundable ? 'Yes - ' + log.refundReason : 'No'}`);
+        }
+
+        function analyzeEligibility(logs) {
+            const eligibleClaims = [];
+
+            logs.forEach(log => {
+                // RULE 1: 5xx Service Failure
+                if (log.status >= 500) {
+                    eligibleClaims.push({
+                        id: log.id,
+                        reason: "Service Availability (5xx Error)",
+                        evidence: `HTTP ${log.status} received at ${log.timestamp}`,
+                        policyCite: "Commercial Terms: Service Availability / SLA",
+                        cost: log.cost
+                    });
+                }
+
+                // RULE 2: Ghost Stream (200 OK but incomplete)
+                if (log.status === 200 && !log.stopReason && log.outputTokens > 0) {
+                    eligibleClaims.push({
+                        id: log.id,
+                        reason: "Incomplete Delivery / Stream Interruption",
+                        evidence: "Stream terminated by server without 'end_turn' signal.",
+                        policyCite: "Billing Policy: Charges apply to successful completion. Delivery was incomplete.",
+                        cost: log.cost
+                    });
+                }
+            });
+
+            return eligibleClaims;
+        }
+
+        function generateSupportPacket() {
+            const events = appState.requestLogs.filter(l => l.isRefundable);
+            if (events.length === 0) {
+                alert('No refundable events to generate a packet for.');
+                return;
+            }
+
+            const claims = analyzeEligibility(events);
+            const totalDisputed = claims.reduce((sum, c) => sum + c.cost, 0);
+            
+            const dateRange = events.length > 0 
+                ? `${new Date(events[events.length - 1].timestamp).toLocaleDateString()} - ${new Date(events[0].timestamp).toLocaleDateString()}`
+                : 'N/A';
+
+            const serverInterruptions = claims.filter(c => c.reason.includes('Incomplete')).length;
+            const serviceErrors = claims.filter(c => c.reason.includes('5xx')).length;
+
+            const coverLetter = `Subject: Billing Adjustment Request - ${dateRange} - User: ${appState.user?.email || appState.user?.username || 'Unknown'}
+
+To: Anthropic Support
+
+I am writing to request a billing adjustment regarding specific API interactions that failed to meet the Service Availability standards or resulted in incomplete delivery.
+
+Summary of Claim:
+- Total Incidents: ${claims.length}
+- Total Disputed Value: $${totalDisputed.toFixed(2)}
+
+Incident Types:
+1. Server-Side Interruption: ${serverInterruptions} requests where the API stream was terminated by the host without a \`stop_reason\` or completion signal, rendering the partial output unusable.
+2. Service Unavailable: ${serviceErrors} requests returning 5xx errors which may have resulted in erroneous credit deduction.
+
+Please see the attached \`request_ids.csv\` for the specific tracing IDs required for your engineering team to verify these server-side failures.
+
+Regards,
+${appState.user?.email || appState.user?.username || 'OpusAudit User'}`;
+
+            document.getElementById('coverLetterPreview').textContent = coverLetter;
+            document.getElementById('packetModal').classList.remove('hidden');
+        }
+
+        function closeModal() {
+            document.getElementById('packetModal').classList.add('hidden');
+        }
+
+        function downloadPacket() {
+            const events = appState.requestLogs.filter(l => l.isRefundable);
+            
+            // Generate CSV
+            const csvHeader = 'timestamp_utc,request_id,model,http_status,error_type,estimated_cost\n';
+            const csvRows = events.map(e => 
+                `${e.timestamp},${e.id},${e.model},${e.status},${e.refundReason || 'null'},${e.cost.toFixed(4)}`
+            ).join('\n');
+            
+            const csv = csvHeader + csvRows;
+            
+            // Download CSV
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `opusaudit_request_ids_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+
+            // Download cover letter
+            const coverLetter = document.getElementById('coverLetterPreview').textContent;
+            const txtBlob = new Blob([coverLetter], { type: 'text/plain' });
+            const txtUrl = URL.createObjectURL(txtBlob);
+            const txtA = document.createElement('a');
+            txtA.href = txtUrl;
+            txtA.download = `opusaudit_cover_letter_${new Date().toISOString().split('T')[0]}.txt`;
+            txtA.click();
+            URL.revokeObjectURL(txtUrl);
+
+            closeModal();
+        }
+
+        async function saveToCloud() {
+            try {
+                const events = appState.requestLogs.filter(l => l.isRefundable);
+                const coverLetter = document.getElementById('coverLetterPreview').textContent;
+                
+                // Generate CSV content
+                const csvHeader = 'timestamp_utc,request_id,model,http_status,error_type,estimated_cost\n';
+                const csvRows = events.map(e => 
+                    `${e.timestamp},${e.id},${e.model},${e.status},${e.refundReason || 'null'},${e.cost.toFixed(4)}`
+                ).join('\n');
+                const csv = csvHeader + csvRows;
+
+                const dateStr = new Date().toISOString().split('T')[0];
+                
+                // Save to Puter cloud
+                await puter.fs.write(`opusaudit_request_ids_${dateStr}.csv`, csv);
+                await puter.fs.write(`opusaudit_cover_letter_${dateStr}.txt`, coverLetter);
+                
+                alert('Files saved to your Puter cloud storage!');
+                closeModal();
+            } catch (error) {
+                console.error('Error saving to cloud:', error);
+                alert('Failed to save to cloud. Please try downloading instead.');
+            }
+        }
+
+        function exportLogs() {
+            if (appState.requestLogs.length === 0) {
+                alert('No logs to export.');
+                return;
+            }
+
+            const csvHeader = 'timestamp_utc,request_id,model,http_status,stop_reason,input_tokens,output_tokens,latency_ms,cost_usd,is_refundable,refund_reason\n';
+            const csvRows = appState.requestLogs.map(e => 
+                `${e.timestamp},${e.id},${e.model},${e.status},${e.stopReason || 'null'},${e.inputTokens},${e.outputTokens},${e.latencyMs},${e.cost.toFixed(4)},${e.isRefundable},${e.refundReason || ''}`
+            ).join('\n');
+            
+            const csv = csvHeader + csvRows;
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `opusaudit_all_logs_${new Date().toISOString().split('T')[0]}.csv`;
+            a.click();
+            URL.revokeObjectURL(url);
+        }
+
+        // Enter key to send
+        document.getElementById('messageInput').addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        // Check if already authenticated on load
+        (async function init() {
+            try {
+                const isSignedIn = await puter.auth.isSignedIn();
+                if (isSignedIn) {
+                    appState.user = await puter.auth.getUser();
+                    showDashboard();
+                    loadSavedData();
+                }
+            } catch (error) {
+                console.log('Not signed in yet');
+            }
+        })();
+    </script>
+</body>
+</html>
