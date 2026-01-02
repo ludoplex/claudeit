@@ -4,6 +4,31 @@
 
 OpusAudit is a comprehensive audit logging and billing monitor for the Anthropic Claude API. It helps you track API usage, costs, and maintain detailed logs that can be used for refund claims per Anthropic's Terms of Service.
 
+## Two Implementations Available
+
+OpusAudit comes in two distinct implementations to suit different needs:
+
+### 🔧 Full Implementation (index.html + app.js)
+- Complete audit logging with detailed metadata
+- Comprehensive dashboard and statistics
+- Full export capabilities (JSON and CSV)
+- Support for all Claude models
+- 23 unit tests, CI/CD ready
+- **Best for:** Professional use, compliance, complete audit trails
+
+### ⚡ Lite Implementation (implementations/index-lite.html + app-lite.js)
+- Minimal, fast interface
+- Quick API testing
+- Simple logging and JSON export
+- Single model support
+- **Best for:** Quick testing, personal use, learning
+
+📦 **Download Ready-to-Use Packages:**
+- [`implementations/opusaudit-full.zip`](implementations/opusaudit-full.zip) - Complete implementation
+- [`implementations/opusaudit-lite.zip`](implementations/opusaudit-lite.zip) - Lightweight version
+
+See [implementations/README.md](implementations/README.md) for detailed comparison.
+
 ## Features
 
 - 🔐 **Secure API Key Storage**: Uses Puter.js KV store for client-side encrypted storage
