@@ -72,47 +72,10 @@ All implementations now support **Claude Opus 4.5** (claude-opus-4-5-20260128) a
 - Claude 3: Opus 3, Sonnet 3, Haiku 3
 - Legacy: Claude 2.1, 2.0, Instant 1.2
 
-**Features:**
-- Complete audit logging with detailed metadata
-- Comprehensive dashboard with statistics
-- Full export capabilities (JSON and CSV)
-- Detailed log viewer with expandable entries
-- Support for all Claude models with accurate pricing
-- Error logging and handling
-- Test API connection interface
-- 23 unit tests with 61% code coverage
-
-**Best for:**
-- Complete audit trails for refund documentation
-- Detailed cost analysis
-- Professional use cases
-- Compliance and record-keeping
-
-**File Size:** ~23KB combined
-
-## 2. Lite Implementation (`index-lite.html` + `app-lite.js`)
-
-**Features:**
-- Minimal, fast interface
-- Quick test functionality
-- Basic logging (success/error)
-- Simple JSON export
-- Focused on speed and simplicity
-- Single-model support (Claude 3.5 Sonnet)
-- Compact log display
-
-**Best for:**
-- Quick API testing
-- Lightweight monitoring
-- Personal use
-- Learning and experimentation
-
-**File Size:** ~11KB combined
-
 ## Usage
 
 ### Option 1: Use in Browser
-Open either `index-full.html` or `index-lite.html` directly in your browser.
+Open either `index-full.html`, `index-lite.html`, or `index-enhanced.html` directly in your browser.
 
 ### Option 2: Deploy to Puter.com
 1. Visit https://puter.com
@@ -121,8 +84,6 @@ Open either `index-full.html` or `index-lite.html` directly in your browser.
 
 ### Option 3: Deploy to Static Hosting
 Deploy to any static hosting service (GitHub Pages, Netlify, Vercel, etc.)
-
-## Downloading Implementations
 
 ## Downloading Implementations
 
