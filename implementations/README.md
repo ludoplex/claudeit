@@ -2,7 +2,7 @@
 
 This directory contains three distinct implementations of the ClaudeIt application:
 
-## 1. Full Implementation (`index-full.html` + `app-full.js`)
+## 1. Full Implementation (`index-full.html` + `app.js`)
 
 **Features:**
 - Complete audit logging with detailed metadata
