@@ -9,6 +9,10 @@ let stats = { calls: 0, tokens: 0, cost: 0 };
 
 // Pricing (per million tokens)
 const PRICING = {
+    'claude-opus-4-5-20260128': { input: 15.00, output: 75.00 },
+    'claude-opus-4-20250514': { input: 15.00, output: 75.00 },
+    'claude-sonnet-4-20250514': { input: 3.00, output: 15.00 },
+    'claude-3-7-sonnet-20250219': { input: 3.00, output: 15.00 },
     'claude-3-5-sonnet-20241022': { input: 3.00, output: 15.00 },
     'claude-3-opus-20240229': { input: 15.00, output: 75.00 },
     'claude-3-haiku-20240307': { input: 0.25, output: 1.25 }

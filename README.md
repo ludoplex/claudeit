@@ -4,15 +4,15 @@
 
 ClaudeIt is a comprehensive audit logging and billing monitor for the Anthropic Claude API. It helps you track API usage, costs, and maintain detailed logs that can be used for refund claims per Anthropic's Terms of Service.
 
-## Two Implementations Available
+## Three Implementations Available
 
-ClaudeIt comes in two distinct implementations to suit different needs:
+ClaudeIt comes in three distinct implementations to suit different needs:
 
 ### 🔧 Full Implementation (index.html + app.js)
 - Complete audit logging with detailed metadata
 - Comprehensive dashboard and statistics
 - Full export capabilities (JSON and CSV)
-- Support for all Claude models
+- Support for all Claude models including **Opus 4.5**
 - 23 unit tests, CI/CD ready
 - **Best for:** Professional use, compliance, complete audit trails
 
@@ -23,9 +23,19 @@ ClaudeIt comes in two distinct implementations to suit different needs:
 - Single model support
 - **Best for:** Quick testing, personal use, learning
 
+### 🚀 Enhanced Implementation (implementations/index-enhanced.html) **NEW**
+- **API Gateway** with streaming support
+- **Jobs Queue** for disconnect survival
+- **Incident Tracking** and billing dispute evidence
+- Multi-tab interface (Gateway, Jobs, Logs, Incidents, Audit, Export)
+- Support for **Claude Opus 4.5** and all models
+- Professional dark theme
+- **Best for:** Production deployment, high-volume usage, team collaboration
+
 📦 **Download Ready-to-Use Packages:**
-- [`implementations/claudeit-full.zip`](implementations/claudeit-full.zip) - Complete implementation
-- [`implementations/claudeit-lite.zip`](implementations/claudeit-lite.zip) - Lightweight version
+- [`implementations/claudeit-full.zip`](implementations/claudeit-full.zip) - Complete implementation (5.7KB)
+- [`implementations/claudeit-lite.zip`](implementations/claudeit-lite.zip) - Lightweight version (3.8KB)
+- [`implementations/claudeit-enhanced.zip`](implementations/claudeit-enhanced.zip) - Advanced gateway (19KB) **NEW**
 
 See [implementations/README.md](implementations/README.md) for detailed comparison.
 
@@ -90,10 +100,12 @@ Deploy to any static hosting service like:
 
 ClaudeIt supports all current Claude models with accurate pricing:
 
-- Claude 3.5 Sonnet (20241022 & 20240620)
-- Claude 3 Opus (20240229)
-- Claude 3 Sonnet (20240229)
-- Claude 3 Haiku (20240307)
+- **Claude 4.5: Opus 4.5** (NEW)
+- Claude 4: Opus 4, Sonnet 4
+- Claude 3.7: Sonnet 3.7
+- Claude 3.5: Sonnet 3.5 (2024-10-22, 2024-06-20), Haiku 3.5
+- Claude 3: Opus 3, Sonnet 3, Haiku 3
+- Legacy: Claude 2.1, 2.0, Instant 1.2
 
 Pricing is automatically updated based on Anthropic's latest rates.
 
