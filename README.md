@@ -4,9 +4,44 @@
 
 ClaudeIt is a comprehensive audit logging and billing monitor for the Anthropic Claude API. It helps you track API usage, costs, and maintain detailed logs that can be used for refund claims per Anthropic's Terms of Service.
 
-## Three Implementations Available
+## Primary Implementation: Enhanced Gateway
 
-ClaudeIt comes in three distinct implementations to suit different needs:
+The main implementation is now the **Enhanced Gateway** - a professional-grade API monitoring and billing dispute evidence collector.
+
+### 🌐 Live Demo
+
+**Try it now:** [https://ludoplex.github.io/claudeit/](https://ludoplex.github.io/claudeit/)
+
+Or launch directly:
+- **[Enhanced Gateway](https://ludoplex.github.io/claudeit/app.html)** (Recommended) - Full-featured application
+- [Full Implementation](https://ludoplex.github.io/claudeit/implementations/index-full.html) - Complete audit logging
+- [Lite Implementation](https://ludoplex.github.io/claudeit/implementations/index-lite.html) - Minimal interface
+
+### 🚀 Enhanced Gateway Features (app.html)
+
+**Single-file, zero-dependency application** (97KB, runs entirely in browser):
+
+- **🔌 API Gateway** - Interactive chat interface with streaming support for real-time responses
+- **📋 Jobs Queue** - Background job processing that survives browser disconnects  
+- **🚨 Incident Tracking** - Automatic detection of incomplete streams, errors, and disputable events
+- **📊 Multi-tab Interface**:
+  - Gateway (interactive chat)
+  - Request Details (deep inspection of requests/responses/headers/SSE events)
+  - Jobs (queue management)
+  - Logs (complete request history)
+  - Incidents (disputable events)
+  - Audit (statistics dashboard)
+  - Export (support packet generation)
+- **🎨 Professional Dark Theme** - Optimized for extended monitoring sessions
+- **📦 Support Packet Generation** - Creates CSV files and cover letters for Anthropic support tickets
+- **🔐 Puter.js Authentication** - User authentication and profile management
+- **✨ Full Model Support** including **Claude Opus 4.5** and all Claude 4, 3.7, 3.5, 3, and legacy models
+
+**Best for:** Production deployment, high-volume usage, billing dispute documentation, professional API monitoring
+
+## Alternative Implementations
+
+For simpler use cases, alternative implementations are available in the `implementations/` folder:
 
 ### 🔧 Full Implementation (index.html + app.js)
 - Complete audit logging with detailed metadata
@@ -54,25 +89,36 @@ See [implementations/README.md](implementations/README.md) for detailed comparis
 
 Open `index.html` in your browser or deploy to any static hosting service. The application uses Puter.js for storage and runs entirely in the browser.
 
-## Installation
+## Installation & Deployment
 
-### Option 1: Direct Use
+### Option 1: Use GitHub Pages (Recommended)
+
+Visit the live deployment: **[https://ludoplex.github.io/claudeit/](https://ludoplex.github.io/claudeit/)**
+
+No installation required - just open in your browser and start monitoring!
+
+### Option 2: Direct Use
 1. Clone this repository
-2. Open `index.html` in a modern web browser
-3. Enter your Anthropic API key
-4. Start monitoring!
+2. Open `index.html` in a modern web browser for the landing page
+3. Or open `app.html` directly for the enhanced gateway
+4. Enter your Anthropic API key
+5. Start monitoring!
 
-### Option 2: Deploy to Puter.com
+### Option 3: Deploy to Puter.com
 1. Visit [puter.com](https://puter.com)
-2. Upload the `index.html` and `app.js` files
+2. Upload the `app.html` file
 3. Open the application
 
-### Option 3: Static Hosting
-Deploy to any static hosting service like:
-- GitHub Pages
+### Option 4: Deploy Your Own GitHub Pages
+
+Fork this repository and enable GitHub Pages in Settings → Pages → Source: GitHub Actions. The deployment workflow will automatically publish to `https://[your-username].github.io/claudeit/`
+
+### Option 5: Static Hosting
+Deploy to any static hosting service:
 - Netlify
 - Vercel
 - Cloudflare Pages
+- AWS S3 + CloudFront
 
 ## Usage
 

@@ -1,0 +1,1716 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ClaudeIt - Claude API Gateway & Billing Dispute Evidence</title>
+    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+    <script src="https://js.puter.com/v2/"></script>
+    <style>
+        @keyframes pulse-glow {
+            0%, 100% { box-shadow: 0 0 5px rgba(99, 102, 241, 0.5); }
+            50% { box-shadow: 0 0 20px rgba(99, 102, 241, 0.8); }
+        }
+        @keyframes stream-flow {
+            0% { background-position: 0% 50%; }
+            100% { background-position: 100% 50%; }
+        }
+        .streaming { animation: pulse-glow 1.5s infinite; }
+        .stream-active {
+            background: linear-gradient(90deg, #4f46e5, #7c3aed, #4f46e5);
+            background-size: 200% 100%;
+            animation: stream-flow 1s linear infinite;
+        }
+        .log-row:hover { background: rgba(99, 102, 241, 0.1); }
+        ::-webkit-scrollbar { width: 8px; height: 8px; }
+        ::-webkit-scrollbar-track { background: #1e1e2e; }
+        ::-webkit-scrollbar-thumb { background: #6366f1; border-radius: 4px; }
+        .gradient-text {
+            background: linear-gradient(135deg, #6366f1, #8b5cf6, #d946ef);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+        .policy-box {
+            background: linear-gradient(135deg, rgba(239, 68, 68, 0.1), rgba(245, 158, 11, 0.1));
+            border: 1px solid rgba(239, 68, 68, 0.3);
+        }
+        .detail-row { border-bottom: 1px solid rgba(75, 85, 99, 0.3); }
+        .detail-row:last-child { border-bottom: none; }
+        .json-key { color: #f472b6; }
+        .json-string { color: #34d399; }
+        .json-number { color: #60a5fa; }
+        .json-boolean { color: #fbbf24; }
+        .json-null { color: #9ca3af; }
+    </style>
+</head>
+<body class="bg-gray-950 text-gray-100 min-h-screen">
+    <!-- Login Overlay -->
+    <div id="loginOverlay" class="fixed inset-0 bg-gray-950 z-[100] flex items-center justify-center">
+        <div class="max-w-md w-full mx-4">
+            <div class="bg-gray-900 rounded-3xl border border-gray-800 p-8 text-center">
+                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-indigo-500 to-purple-600 rounded-2xl flex items-center justify-center mb-6">
+                    <svg class="w-10 h-10 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <h1 class="text-3xl font-bold gradient-text mb-2">ClaudeIt</h1>
+                <p class="text-gray-400 mb-6">Claude API Gateway & Billing Evidence Collector</p>
+                
+                <div class="bg-gray-800/50 rounded-xl p-4 mb-6 text-left text-sm">
+                    <h3 class="font-medium text-gray-300 mb-2">🔐 Authentication Required</h3>
+                    <p class="text-gray-500 text-xs">Sign in with Puter to enable:</p>
+                    <ul class="text-xs text-gray-500 mt-2 space-y-1">
+                        <li>• Cloud sync of request logs across devices</li>
+                        <li>• Secure evidence vault storage</li>
+                        <li>• Job mode disconnect survival</li>
+                        <li>• Support packet generation</li>
+                    </ul>
+                </div>
+
+                <button id="loginBtn" onclick="performLogin()" class="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl font-medium text-lg transition-all flex items-center justify-center gap-3">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
+                    </svg>
+                    Sign In with Puter
+                </button>
+                
+                <p id="loginStatus" class="text-xs text-gray-500 mt-4">Click to authenticate via Puter</p>
+
+                <div class="mt-6 pt-6 border-t border-gray-800">
+                    <p class="text-xs text-amber-400">⚖️ Policy Note: Credits are non-refundable per Anthropic Terms</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header -->
+    <header class="bg-gray-900/80 backdrop-blur-xl border-b border-gray-800 sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-xl flex items-center justify-center">
+                    <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"/>
+                    </svg>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold gradient-text">ClaudeIt</h1>
+                    <p class="text-xs text-gray-500">Claude API Gateway & Billing Evidence Collector</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-4">
+                <div id="statusIndicator" class="flex items-center gap-2 px-3 py-1.5 bg-gray-800 rounded-full">
+                    <div class="w-2 h-2 bg-yellow-500 rounded-full animate-pulse"></div>
+                    <span class="text-sm text-gray-400">Initializing...</span>
+                </div>
+                <div id="jobIndicator" class="hidden items-center gap-2 px-3 py-1.5 bg-indigo-900/50 rounded-full">
+                    <div class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
+                    <span class="text-sm text-indigo-300">Job Active</span>
+                </div>
+                <div id="userInfo" class="flex items-center gap-2">
+                    <div class="w-8 h-8 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center text-xs font-bold" id="userAvatar">?</div>
+                    <div class="text-left">
+                        <div id="userEmail" class="text-sm text-gray-300"></div>
+                        <button onclick="logout()" class="text-xs text-red-400 hover:text-red-300">Sign Out</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <!-- Policy Notice Banner -->
+    <div class="bg-amber-900/20 border-b border-amber-800/50 px-4 py-2">
+        <div class="max-w-7xl mx-auto flex items-center gap-2 text-xs text-amber-300">
+            <span>⚖️</span>
+            <span><strong>Policy Note:</strong> Credits are non-refundable per Anthropic Terms. This tool generates evidence for <em>billing correctness disputes</em> (server errors, incomplete delivery), not credit refunds.</span>
+        </div>
+    </div>
+
+    <!-- Navigation Tabs -->
+    <nav class="bg-gray-900/50 border-b border-gray-800">
+        <div class="max-w-7xl mx-auto px-4">
+            <div class="flex gap-1 overflow-x-auto">
+                <button onclick="switchTab('gateway')" class="tab-btn active px-4 py-3 text-sm font-medium border-b-2 border-indigo-500 text-indigo-400 whitespace-nowrap" data-tab="gateway">
+                    🔌 API Gateway
+                </button>
+                <button onclick="switchTab('details')" class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap" data-tab="details">
+                    🔬 Request Details
+                </button>
+                <button onclick="switchTab('jobs')" class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap" data-tab="jobs">
+                    📋 Jobs Queue
+                </button>
+                <button onclick="switchTab('logs')" class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap" data-tab="logs">
+                    📊 Request Logs
+                </button>
+                <button onclick="switchTab('incidents')" class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap" data-tab="incidents">
+                    🚨 Incidents
+                </button>
+                <button onclick="switchTab('audit')" class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap" data-tab="audit">
+                    🔍 Policy Audit
+                </button>
+                <button onclick="switchTab('export')" class="tab-btn px-4 py-3 text-sm font-medium border-b-2 border-transparent text-gray-400 hover:text-gray-200 whitespace-nowrap" data-tab="export">
+                    📦 Support Packet
+                </button>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="max-w-7xl mx-auto px-4 py-6">
+        <!-- Gateway Tab -->
+        <div id="gatewayTab" class="tab-content">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <!-- Chat Interface -->
+                <div class="lg:col-span-2 bg-gray-900 rounded-2xl border border-gray-800 flex flex-col h-[70vh]">
+                    <div class="p-4 border-b border-gray-800 space-y-3">
+                        <div class="flex items-center justify-between flex-wrap gap-2">
+                            <div class="flex items-center gap-3 flex-wrap">
+                                <select id="modelSelect" class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm min-w-[220px]">
+                                    <optgroup label="Claude 4.5 (Latest)">
+                                        <option value="claude-opus-4-5-20260128">claude-opus-4.5-20260128 ($15/$75)</option>
+                                    </optgroup>
+                                    <optgroup label="Claude 4">
+                                        <option value="claude-opus-4-20250514">claude-opus-4-20250514 ($15/$75)</option>
+                                        <option value="claude-sonnet-4-20250514" selected>claude-sonnet-4-20250514 ($3/$15)</option>
+                                    </optgroup>
+                                    <optgroup label="Claude 3.7">
+                                        <option value="claude-3-7-sonnet-20250219">claude-3-7-sonnet-20250219 ($3/$15)</option>
+                                    </optgroup>
+                                    <optgroup label="Claude 3.5">
+                                        <option value="claude-3-5-sonnet-20241022">claude-3-5-sonnet-20241022 ($3/$15)</option>
+                                        <option value="claude-3-5-sonnet-20240620">claude-3-5-sonnet-20240620 ($3/$15)</option>
+                                        <option value="claude-3-5-haiku-20241022">claude-3-5-haiku-20241022 ($0.80/$4)</option>
+                                    </optgroup>
+                                    <optgroup label="Claude 3">
+                                        <option value="claude-3-opus-20240229">claude-3-opus-20240229 ($15/$75)</option>
+                                        <option value="claude-3-sonnet-20240229">claude-3-sonnet-20240229 ($3/$15)</option>
+                                        <option value="claude-3-haiku-20240307">claude-3-haiku-20240307 ($0.25/$1.25)</option>
+                                    </optgroup>
+                                    <optgroup label="Legacy">
+                                        <option value="claude-2.1">claude-2.1 ($8/$24)</option>
+                                        <option value="claude-2.0">claude-2.0 ($8/$24)</option>
+                                        <option value="claude-instant-1.2">claude-instant-1.2 ($0.80/$2.40)</option>
+                                    </optgroup>
+                                    <optgroup label="OpenAI (via Puter)">
+                                        <option value="gpt-4o">gpt-4o ($2.50/$10)</option>
+                                        <option value="gpt-4o-mini">gpt-4o-mini ($0.15/$0.60)</option>
+                                        <option value="gpt-4-turbo">gpt-4-turbo ($10/$30)</option>
+                                        <option value="o1-preview">o1-preview ($15/$60)</option>
+                                        <option value="o1-mini">o1-mini ($3/$12)</option>
+                                    </optgroup>
+                                </select>
+                                <label class="flex items-center gap-2 text-xs text-gray-500">
+                                    <input type="checkbox" id="jobModeToggle" checked class="rounded bg-gray-700 border-gray-600">
+                                    <span>Job Mode</span>
+                                </label>
+                                <label class="flex items-center gap-2 text-xs text-gray-500">
+                                    <input type="checkbox" id="streamToggle" checked class="rounded bg-gray-700 border-gray-600">
+                                    <span>Stream</span>
+                                </label>
+                            </div>
+                            <div id="streamStatus" class="hidden items-center gap-2 px-3 py-1 bg-indigo-900/50 rounded-full">
+                                <div class="w-2 h-2 bg-indigo-400 rounded-full animate-pulse"></div>
+                                <span id="streamStatusText" class="text-xs text-indigo-300">Streaming...</span>
+                            </div>
+                        </div>
+                        
+                        <!-- Model Info Display -->
+                        <div id="modelInfo" class="bg-gray-800/50 rounded-lg p-3 text-xs">
+                            <div class="grid grid-cols-2 md:grid-cols-4 gap-3">
+                                <div>
+                                    <span class="text-gray-500">Model:</span>
+                                    <span id="infoModelId" class="ml-1 text-indigo-400 font-mono">claude-sonnet-4-20250514</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Input:</span>
+                                    <span id="infoInputPrice" class="ml-1 text-green-400">$3.00/MTok</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Output:</span>
+                                    <span id="infoOutputPrice" class="ml-1 text-purple-400">$15.00/MTok</span>
+                                </div>
+                                <div>
+                                    <span class="text-gray-500">Context:</span>
+                                    <span id="infoContext" class="ml-1 text-cyan-400">200K</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div id="chatMessages" class="flex-1 overflow-y-auto p-4 space-y-4">
+                        <div class="text-center py-12">
+                            <div class="w-16 h-16 mx-auto bg-gradient-to-br from-indigo-500/20 to-purple-600/20 rounded-2xl flex items-center justify-center mb-4">
+                                <svg class="w-8 h-8 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"/>
+                                </svg>
+                            </div>
+                            <h3 class="text-lg font-medium text-gray-300">ClaudeIt Gateway Active</h3>
+                            <p class="text-sm text-gray-500 mt-1">All requests logged with full API details</p>
+                            <div class="mt-4 p-3 bg-gray-800/50 rounded-xl text-xs text-gray-400 max-w-md mx-auto">
+                                <div class="font-medium text-gray-300 mb-2">📊 Full Telemetry Enabled</div>
+                                <p>Every API interaction is captured including: request-id, anthropic-organization-id, SSE events, stop_reason, token usage, timing, and cost.</p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="p-4 border-t border-gray-800">
+                        <div class="flex gap-3">
+                            <textarea id="messageInput" rows="2" placeholder="Type your message... (Shift+Enter for newline)" 
+                                class="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-4 py-3 text-sm resize-none focus:outline-none focus:border-indigo-500 transition-colors"
+                                onkeydown="handleKeyDown(event)"></textarea>
+                            <button onclick="sendMessage()" id="sendBtn" 
+                                class="px-6 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl font-medium transition-all flex items-center gap-2">
+                                <span>Send</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Stats Panel -->
+                <div class="space-y-4">
+                    <div class="bg-gray-900 rounded-2xl border border-gray-800 p-4">
+                        <h3 class="text-sm font-medium text-gray-400 mb-3">Session Statistics</h3>
+                        <div class="space-y-3">
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500 text-sm">Total Requests</span>
+                                <span id="statRequests" class="text-lg font-bold text-white">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500 text-sm">Success Rate</span>
+                                <span id="statSuccess" class="text-lg font-bold text-green-400">--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500 text-sm">Avg Latency</span>
+                                <span id="statLatency" class="text-lg font-bold text-blue-400">--</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500 text-sm">Total Tokens</span>
+                                <span id="statTokens" class="text-lg font-bold text-cyan-400">0</span>
+                            </div>
+                            <div class="flex justify-between items-center">
+                                <span class="text-gray-500 text-sm">Est. Cost</span>
+                                <span id="statCost" class="text-lg font-bold text-purple-400">$0.0000</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900 rounded-2xl border border-gray-800 p-4">
+                        <h3 class="text-sm font-medium text-gray-400 mb-3">🚨 Disputable Events</h3>
+                        <div id="disputeCount" class="text-3xl font-bold text-red-400">0</div>
+                        <p class="text-xs text-gray-500 mt-1">Estimated disputed value</p>
+                        <div id="disputeValue" class="text-xl font-bold text-yellow-400 mt-1">$0.0000</div>
+                        <div class="mt-3 text-xs text-gray-500 space-y-1">
+                            <div class="flex justify-between"><span>5xx Errors:</span><span id="count5xx">0</span></div>
+                            <div class="flex justify-between"><span>529 Overloaded:</span><span id="count529">0</span></div>
+                            <div class="flex justify-between"><span>429 Rate Limited:</span><span id="count429">0</span></div>
+                            <div class="flex justify-between"><span>Stream Errors:</span><span id="countStreamErr">0</span></div>
+                            <div class="flex justify-between"><span>Incomplete:</span><span id="countIncomplete">0</span></div>
+                        </div>
+                    </div>
+
+                    <div class="bg-gray-900 rounded-2xl border border-gray-800 p-4">
+                        <h3 class="text-sm font-medium text-gray-400 mb-3">SSE Event Monitor</h3>
+                        <div id="sseMonitor" class="space-y-1 text-xs font-mono max-h-32 overflow-y-auto">
+                            <p class="text-gray-500">Waiting for stream...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Request Details Tab -->
+        <div id="detailsTab" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <!-- Last Request Details -->
+                <div class="bg-gray-900 rounded-2xl border border-gray-800 p-4">
+                    <h3 class="font-medium mb-4 flex items-center gap-2">
+                        <span class="w-3 h-3 bg-green-500 rounded-full" id="lastRequestIndicator"></span>
+                        Last Request Details
+                    </h3>
+                    <div id="lastRequestDetails" class="space-y-2 text-sm">
+                        <p class="text-gray-500 text-center py-8">No requests yet</p>
+                    </div>
+                </div>
+
+                <!-- Raw Request/Response -->
+                <div class="bg-gray-900 rounded-2xl border border-gray-800 p-4">
+                    <div class="flex items-center justify-between mb-4">
+                        <h3 class="font-medium">Raw API Data</h3>
+                        <div class="flex gap-2">
+                            <button onclick="showRawTab('request')" class="raw-tab-btn active px-3 py-1 text-xs rounded-lg bg-indigo-600" data-raw="request">Request</button>
+                            <button onclick="showRawTab('response')" class="raw-tab-btn px-3 py-1 text-xs rounded-lg bg-gray-700" data-raw="response">Response</button>
+                            <button onclick="showRawTab('headers')" class="raw-tab-btn px-3 py-1 text-xs rounded-lg bg-gray-700" data-raw="headers">Headers</button>
+                            <button onclick="showRawTab('events')" class="raw-tab-btn px-3 py-1 text-xs rounded-lg bg-gray-700" data-raw="events">SSE Events</button>
+                        </div>
+                    </div>
+                    <pre id="rawDataDisplay" class="bg-gray-800 rounded-xl p-4 text-xs overflow-auto max-h-96 font-mono text-gray-300">No data yet</pre>
+                </div>
+
+                <!-- Full Request Log -->
+                <div class="lg:col-span-2 bg-gray-900 rounded-2xl border border-gray-800 p-4">
+                    <h3 class="font-medium mb-4">Complete Request Record (Evidence-Grade)</h3>
+                    <div class="overflow-x-auto">
+                        <table class="w-full text-xs">
+                            <thead class="bg-gray-800/50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-gray-400">Field</th>
+                                    <th class="px-3 py-2 text-left text-gray-400">Value</th>
+                                    <th class="px-3 py-2 text-left text-gray-400">Description</th>
+                                </tr>
+                            </thead>
+                            <tbody id="fullRecordTable" class="divide-y divide-gray-800">
+                                <tr><td colspan="3" class="px-3 py-8 text-center text-gray-500">Make a request to see full details</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Jobs Tab -->
+        <div id="jobsTab" class="tab-content hidden">
+            <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+                <div class="p-4 border-b border-gray-800 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-medium">Jobs Queue (Disconnect Survival)</h3>
+                        <p class="text-xs text-gray-500 mt-1">Jobs survive browser disconnects - upstream request continues even if you close the tab</p>
+                    </div>
+                    <button onclick="clearCompletedJobs()" class="text-sm text-gray-400 hover:text-gray-200">Clear Completed</button>
+                </div>
+                <div id="jobsList" class="divide-y divide-gray-800">
+                    <div class="p-8 text-center text-gray-500">No jobs in queue</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Logs Tab -->
+        <div id="logsTab" class="tab-content hidden">
+            <div class="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+                <div class="p-4 border-b border-gray-800 flex items-center justify-between flex-wrap gap-2">
+                    <h3 class="font-medium">Request Logs (Evidence Vault)</h3>
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <select id="logFilter" onchange="filterLogs()" class="bg-gray-800 border border-gray-700 rounded-lg px-3 py-1.5 text-sm">
+                            <option value="all">All Requests</option>
+                            <option value="success">Successful (200 + end_turn)</option>
+                            <option value="error">Errors (4xx/5xx)</option>
+                            <option value="disputable">Disputable Events</option>
+                            <option value="incomplete">Incomplete Streams</option>
+                        </select>
+                        <button onclick="exportLogsJSON()" class="text-sm text-indigo-400 hover:text-indigo-300">Export JSON</button>
+                        <button onclick="exportLogsNDJSON()" class="text-sm text-cyan-400 hover:text-cyan-300">Export NDJSON</button>
+                        <button onclick="clearLogs()" class="text-sm text-red-400 hover:text-red-300">Clear All</button>
+                    </div>
+                </div>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-800/50">
+                            <tr>
+                                <th class="px-3 py-3 text-left text-gray-400 font-medium text-xs">Timestamp</th>
+                                <th class="px-3 py-3 text-left text-gray-400 font-medium text-xs">Request ID</th>
+                                <th class="px-3 py-3 text-left text-gray-400 font-medium text-xs">Model</th>
+                                <th class="px-3 py-3 text-left text-gray-400 font-medium text-xs">Status</th>
+                                <th class="px-3 py-3 text-left text-gray-400 font-medium text-xs">Latency</th>
+                                <th class="px-3 py-3 text-left text-gray-400 font-medium text-xs">In/Out Tokens</th>
+                                <th class="px-3 py-3 text-left text-gray-400 font-medium text-xs">stop_reason</th>
+                                <th class="px-3 py-3 text-left text-gray-400 font-medium text-xs">Cost</th>
+                                <th class="px-3 py-3 text-left text-gray-400 font-medium text-xs">Flags</th>
+                                <th class="px-3 py-3 text-left text-gray-400 font-medium text-xs">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody id="logsTableBody" class="divide-y divide-gray-800">
+                            <tr><td colspan="10" class="px-3 py-12 text-center text-gray-500">No requests logged yet</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Incidents Tab -->
+        <div id="incidentsTab" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                <div class="lg:col-span-2 space-y-4">
+                    <div class="bg-gray-900 rounded-2xl border border-gray-800 p-4">
+                        <div class="flex items-center justify-between mb-4">
+                            <h3 class="font-medium">Detected Incidents</h3>
+                            <button onclick="detectIncidents()" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-500 rounded-lg text-sm font-medium">
+                                🔍 Scan for Incidents
+                            </button>
+                        </div>
+                        <div id="incidentsList" class="space-y-3">
+                            <p class="text-gray-500 text-center py-8">Click "Scan for Incidents" to analyze request logs</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="space-y-4">
+                    <div class="bg-gray-900 rounded-2xl border border-gray-800 p-4">
+                        <h3 class="text-sm font-medium text-gray-400 mb-3">Anthropic Error Types</h3>
+                        <div class="space-y-2 text-xs">
+                            <div class="p-2 bg-gray-800/50 rounded-lg">
+                                <div class="flex items-center gap-2 font-medium text-red-400">
+                                    <span class="w-2 h-2 bg-red-500 rounded-full"></span>
+                                    api_error (500)
+                                </div>
+                                <p class="text-gray-500 mt-1">Internal server error</p>
+                            </div>
+                            <div class="p-2 bg-gray-800/50 rounded-lg">
+                                <div class="flex items-center gap-2 font-medium text-orange-400">
+                                    <span class="w-2 h-2 bg-orange-500 rounded-full"></span>
+                                    overloaded_error (529)
+                                </div>
+                                <p class="text-gray-500 mt-1">API temporarily overloaded</p>
+                            </div>
+                            <div class="p-2 bg-gray-800/50 rounded-lg">
+                                <div class="flex items-center gap-2 font-medium text-yellow-400">
+                                    <span class="w-2 h-2 bg-yellow-500 rounded-full"></span>
+                                    rate_limit_error (429)
+                                </div>
+                                <p class="text-gray-500 mt-1">Too many requests</p>
+                            </div>
+                            <div class="p-2 bg-gray-800/50 rounded-lg">
+                                <div class="flex items-center gap-2 font-medium text-blue-400">
+                                    <span class="w-2 h-2 bg-blue-500 rounded-full"></span>
+                                    request_too_large (413)
+                                </div>
+                                <p class="text-gray-500 mt-1">Request exceeds 32MB</p>
+                            </div>
+                            <div class="p-2 bg-gray-800/50 rounded-lg">
+                                <div class="flex items-center gap-2 font-medium text-purple-400">
+                                    <span class="w-2 h-2 bg-purple-500 rounded-full"></span>
+                                    invalid_request_error (400)
+                                </div>
+                                <p class="text-gray-500 mt-1">Malformed request</p>
+                            </div>
+                            <div class="p-2 bg-gray-800/50 rounded-lg">
+                                <div class="flex items-center gap-2 font-medium text-pink-400">
+                                    <span class="w-2 h-2 bg-pink-500 rounded-full"></span>
+                                    authentication_error (401)
+                                </div>
+                                <p class="text-gray-500 mt-1">Invalid API key</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="policy-box rounded-2xl p-4">
+                        <h3 class="text-sm font-medium text-amber-400 mb-2">⚠️ Billing Policy</h3>
+                        <ul class="text-xs text-gray-400 space-y-2">
+                            <li>• <strong>Credits are non-refundable</strong></li>
+                            <li>• <strong>Failed requests generally not charged</strong></li>
+                            <li>• You <strong>may be charged</strong> if your client disconnects/times out</li>
+                            <li>• Usage Credits expire <strong>one year</strong> from issuance</li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Audit Tab -->
+        <div id="auditTab" class="tab-content hidden">
+            <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+                    <h3 class="text-lg font-medium mb-4">🔍 Policy Eligibility Analysis</h3>
+                    <p class="text-sm text-gray-400 mb-4">Automated checks against Anthropic's documented billing policies</p>
+                    
+                    <button onclick="runPolicyAudit()" class="w-full py-3 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-500 hover:to-purple-500 rounded-xl font-medium transition-all mb-6">
+                        Run Policy Check
+                    </button>
+
+                    <div id="auditResults" class="space-y-3">
+                        <div class="p-4 bg-gray-800/50 rounded-xl border border-gray-700">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
+                                <span class="font-medium text-gray-400">5xx/529 Server Failures</span>
+                            </div>
+                            <p class="text-2xl font-bold" id="audit5xx">0</p>
+                            <p class="text-xs text-gray-500">api_error / overloaded_error</p>
+                        </div>
+                        
+                        <div class="p-4 bg-gray-800/50 rounded-xl border border-gray-700">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
+                                <span class="font-medium text-gray-400">SSE Stream Errors</span>
+                            </div>
+                            <p class="text-2xl font-bold" id="auditSSE">0</p>
+                            <p class="text-xs text-gray-500">HTTP 200 + event:error</p>
+                        </div>
+                        
+                        <div class="p-4 bg-gray-800/50 rounded-xl border border-gray-700">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
+                                <span class="font-medium text-gray-400">Incomplete Streams</span>
+                            </div>
+                            <p class="text-2xl font-bold" id="auditIncomplete">0</p>
+                            <p class="text-xs text-gray-500">No message_stop received</p>
+                        </div>
+                        
+                        <div class="p-4 bg-gray-800/50 rounded-xl border border-gray-700">
+                            <div class="flex items-center gap-2 mb-2">
+                                <div class="w-3 h-3 bg-gray-600 rounded-full"></div>
+                                <span class="font-medium text-gray-400">Rate Limit Events</span>
+                            </div>
+                            <p class="text-2xl font-bold" id="audit429">0</p>
+                            <p class="text-xs text-gray-500">429 rate_limit_error</p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+                    <h3 class="text-lg font-medium mb-4">📋 Dispute-Eligible Claims</h3>
+                    <div class="text-xs text-amber-400 bg-amber-900/20 rounded-lg p-3 mb-4">
+                        For <strong>billing correctness disputes</strong> only. Provide request-id values to Anthropic Support.
+                    </div>
+                    <div id="claimsList" class="space-y-3 max-h-96 overflow-y-auto">
+                        <p class="text-gray-500 text-center py-8">Run policy check to analyze</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Export Tab -->
+        <div id="exportTab" class="tab-content hidden">
+            <div class="max-w-4xl mx-auto">
+                <div class="policy-box rounded-2xl p-4 mb-6">
+                    <div class="flex items-start gap-3">
+                        <span class="text-2xl">⚖️</span>
+                        <div>
+                            <h4 class="font-medium text-amber-300">Billing Dispute Packet Generator</h4>
+                            <p class="text-sm text-gray-400 mt-1">
+                                Generates evidence for <strong>billing correctness disputes</strong>. Per Anthropic: <em>"Credits are non-refundable"</em>.
+                            </p>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6">
+                    <h3 class="text-lg font-medium mb-6">📦 Generate Support Packet</h3>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Your Email</label>
+                            <input type="email" id="exportEmail" placeholder="you@company.com" 
+                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Organization ID</label>
+                            <input type="text" id="exportOrgId" placeholder="org_..." 
+                                class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-sm focus:outline-none focus:border-indigo-500">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">Start Date</label>
+                            <input type="date" id="exportDateFrom" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-sm">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-400 mb-2">End Date</label>
+                            <input type="date" id="exportDateTo" class="w-full bg-gray-800 border border-gray-700 rounded-lg px-4 py-2.5 text-sm">
+                        </div>
+                    </div>
+
+                    <div id="exportSummary" class="p-4 bg-gray-800/50 rounded-xl border border-gray-700 mb-6">
+                        <h4 class="font-medium mb-3">Packet Summary</h4>
+                        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                            <div><span class="text-gray-500">Total:</span><span id="summaryIncidents" class="ml-2 font-bold">0</span></div>
+                            <div><span class="text-gray-500">5xx/529:</span><span id="summary5xx" class="ml-2 font-bold text-red-400">0</span></div>
+                            <div><span class="text-gray-500">SSE Errors:</span><span id="summarySSE" class="ml-2 font-bold text-purple-400">0</span></div>
+                            <div><span class="text-gray-500">Value:</span><span id="summaryValue" class="ml-2 font-bold text-yellow-400">$0.00</span></div>
+                        </div>
+                    </div>
+
+                    <div id="thresholdWarning" class="hidden p-4 bg-yellow-900/30 border border-yellow-700 rounded-xl mb-6">
+                        <p class="text-sm text-yellow-200">⚠️ Disputed amount below $5.00 - consider waiting for more documented failures.</p>
+                    </div>
+
+                    <div class="flex gap-3 flex-wrap">
+                        <button onclick="downloadCSV()" class="flex-1 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-medium min-w-[140px]">📄 CSV</button>
+                        <button onclick="downloadReadme()" class="flex-1 py-3 bg-gray-700 hover:bg-gray-600 rounded-xl font-medium min-w-[140px]">📝 README</button>
+                        <button onclick="downloadFullPacket()" class="flex-1 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl font-medium min-w-[140px]">📦 All Files</button>
+                    </div>
+                </div>
+
+                <div class="bg-gray-900 rounded-2xl border border-gray-800 p-6 mt-6">
+                    <h3 class="font-medium mb-4">📄 CSV Preview</h3>
+                    <pre id="csvPreview" class="bg-gray-800 rounded-xl p-4 text-xs overflow-auto max-h-48 font-mono">timestamp_utc,request_id,anthropic_org_id,model,endpoint,http_status,error_type,stop_reason,duration_ms,input_tokens,output_tokens,cache_creation_tokens,cache_read_tokens,estimated_cost_usd</pre>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // ============================================
+        // COMPLETE ANTHROPIC MODEL CATALOG WITH PRICING
+        // Source: Claude pricing documentation
+        // ============================================
+        const MODELS = {
+            // Claude 4.5
+            'claude-opus-4-5-20260128': {
+                name: 'Claude Opus 4.5', family: 'claude-4.5', input: 15.00, output: 75.00,
+                context: 200000, maxOutput: 32000, cacheWrite: 18.75, cacheRead: 1.50,
+                description: 'Most advanced Claude model with enhanced capabilities'
+            },
+            // Claude 4
+            'claude-opus-4-20250514': { 
+                name: 'Claude Opus 4', family: 'claude-4', input: 15.00, output: 75.00, 
+                context: 200000, maxOutput: 32000, cacheWrite: 18.75, cacheRead: 1.50,
+                description: 'Most capable Claude model'
+            },
+            'claude-sonnet-4-20250514': { 
+                name: 'Claude Sonnet 4', family: 'claude-4', input: 3.00, output: 15.00, 
+                context: 200000, maxOutput: 16000, cacheWrite: 3.75, cacheRead: 0.30,
+                description: 'Balanced performance and cost'
+            },
+            // Claude 3.7
+            'claude-3-7-sonnet-20250219': { 
+                name: 'Claude 3.7 Sonnet', family: 'claude-3.7', input: 3.00, output: 15.00, 
+                context: 200000, maxOutput: 16000, cacheWrite: 3.75, cacheRead: 0.30,
+                description: 'Extended thinking capabilities'
+            },
+            // Claude 3.5
+            'claude-3-5-sonnet-20241022': { 
+                name: 'Claude 3.5 Sonnet v2', family: 'claude-3.5', input: 3.00, output: 15.00, 
+                context: 200000, maxOutput: 8192, cacheWrite: 3.75, cacheRead: 0.30,
+                description: 'Latest 3.5 Sonnet'
+            },
+            'claude-3-5-sonnet-20240620': { 
+                name: 'Claude 3.5 Sonnet v1', family: 'claude-3.5', input: 3.00, output: 15.00, 
+                context: 200000, maxOutput: 8192, cacheWrite: 3.75, cacheRead: 0.30,
+                description: 'Original 3.5 Sonnet'
+            },
+            'claude-3-5-haiku-20241022': { 
+                name: 'Claude 3.5 Haiku', family: 'claude-3.5', input: 0.80, output: 4.00, 
+                context: 200000, maxOutput: 8192, cacheWrite: 1.00, cacheRead: 0.08,
+                description: 'Fast and affordable'
+            },
+            // Claude 3
+            'claude-3-opus-20240229': { 
+                name: 'Claude 3 Opus', family: 'claude-3', input: 15.00, output: 75.00, 
+                context: 200000, maxOutput: 4096, cacheWrite: 18.75, cacheRead: 1.50,
+                description: 'Previous flagship'
+            },
+            'claude-3-sonnet-20240229': { 
+                name: 'Claude 3 Sonnet', family: 'claude-3', input: 3.00, output: 15.00, 
+                context: 200000, maxOutput: 4096, cacheWrite: 3.75, cacheRead: 0.30,
+                description: 'Balanced Claude 3'
+            },
+            'claude-3-haiku-20240307': { 
+                name: 'Claude 3 Haiku', family: 'claude-3', input: 0.25, output: 1.25, 
+                context: 200000, maxOutput: 4096, cacheWrite: 0.30, cacheRead: 0.03,
+                description: 'Fastest Claude 3'
+            },
+            // Legacy
+            'claude-2.1': { 
+                name: 'Claude 2.1', family: 'claude-2', input: 8.00, output: 24.00, 
+                context: 200000, maxOutput: 4096,
+                description: 'Legacy model'
+            },
+            'claude-2.0': { 
+                name: 'Claude 2.0', family: 'claude-2', input: 8.00, output: 24.00, 
+                context: 100000, maxOutput: 4096,
+                description: 'Legacy model'
+            },
+            'claude-instant-1.2': { 
+                name: 'Claude Instant', family: 'claude-instant', input: 0.80, output: 2.40, 
+                context: 100000, maxOutput: 4096,
+                description: 'Fast legacy model'
+            },
+            // OpenAI via Puter
+            'gpt-4o': { name: 'GPT-4o', family: 'openai', input: 2.50, output: 10.00, context: 128000, maxOutput: 4096 },
+            'gpt-4o-mini': { name: 'GPT-4o Mini', family: 'openai', input: 0.15, output: 0.60, context: 128000, maxOutput: 4096 },
+            'gpt-4-turbo': { name: 'GPT-4 Turbo', family: 'openai', input: 10.00, output: 30.00, context: 128000, maxOutput: 4096 },
+            'o1-preview': { name: 'O1 Preview', family: 'openai', input: 15.00, output: 60.00, context: 128000, maxOutput: 32768 },
+            'o1-mini': { name: 'O1 Mini', family: 'openai', input: 3.00, output: 12.00, context: 128000, maxOutput: 65536 }
+        };
+
+        // ============================================
+        // STATE
+        // ============================================
+        let requestLogs = [];
+        let jobs = [];
+        let incidents = [];
+        let isAuthenticated = false;
+        let currentUser = null;
+        let lastRequest = null;
+        let conversationHistory = [];
+
+        // ============================================
+        // INITIALIZATION & AUTH
+        // ============================================
+        document.addEventListener('DOMContentLoaded', async () => {
+            await initializePuter();
+            setupModelSelector();
+        });
+
+        async function initializePuter() {
+            try {
+                document.getElementById('loginStatus').textContent = 'Checking authentication...';
+                
+                if (puter.auth.isSignedIn()) {
+                    const user = await puter.auth.getUser();
+                    await completeLogin(user);
+                } else {
+                    document.getElementById('loginStatus').textContent = 'Please sign in to continue';
+                }
+            } catch (error) {
+                console.error('Init error:', error);
+                document.getElementById('loginStatus').textContent = 'Error: ' + error.message;
+            }
+        }
+
+        async function performLogin() {
+            const btn = document.getElementById('loginBtn');
+            const status = document.getElementById('loginStatus');
+            
+            btn.disabled = true;
+            btn.innerHTML = '<svg class="w-5 h-5 animate-spin" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4z"></path></svg> Signing in...';
+            status.textContent = 'Opening Puter authentication...';
+            
+            try {
+                await puter.auth.signIn();
+                const user = await puter.auth.getUser();
+                await completeLogin(user);
+            } catch (error) {
+                console.error('Login error:', error);
+                status.textContent = 'Login failed: ' + error.message;
+                btn.disabled = false;
+                btn.innerHTML = 'Sign In with Puter';
+            }
+        }
+
+        async function completeLogin(user) {
+            currentUser = user;
+            isAuthenticated = true;
+            
+            // Update UI
+            document.getElementById('loginOverlay').style.display = 'none';
+            document.getElementById('userEmail').textContent = user.email || user.username;
+            document.getElementById('userAvatar').textContent = (user.email || user.username || '?')[0].toUpperCase();
+            document.getElementById('exportEmail').value = user.email || '';
+            
+            updateStatus('connected', 'Gateway Active');
+            
+            // Load data
+            loadFromStorage();
+            await loadFromCloud();
+            updateAllStats();
+            setDefaultDates();
+        }
+
+        async function logout() {
+            await puter.auth.signOut();
+            isAuthenticated = false;
+            currentUser = null;
+            document.getElementById('loginOverlay').style.display = 'flex';
+            document.getElementById('loginStatus').textContent = 'Signed out';
+            document.getElementById('loginBtn').disabled = false;
+            document.getElementById('loginBtn').innerHTML = '<svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/></svg> Sign In with Puter';
+        }
+
+        function updateStatus(type, message) {
+            const indicator = document.getElementById('statusIndicator');
+            const dot = indicator.querySelector('div');
+            const text = indicator.querySelector('span');
+            const colors = { connecting: 'bg-yellow-500', connected: 'bg-green-500', ready: 'bg-blue-500', error: 'bg-red-500', streaming: 'bg-indigo-500' };
+            dot.className = `w-2 h-2 rounded-full ${colors[type] || 'bg-gray-500'}`;
+            if (type === 'connecting' || type === 'streaming') dot.classList.add('animate-pulse');
+            text.textContent = message;
+        }
+
+        // ============================================
+        // MODEL SELECTOR
+        // ============================================
+        function setupModelSelector() {
+            const select = document.getElementById('modelSelect');
+            select.addEventListener('change', updateModelInfo);
+            updateModelInfo();
+        }
+
+        function updateModelInfo() {
+            const modelId = document.getElementById('modelSelect').value;
+            const model = MODELS[modelId] || MODELS['claude-sonnet-4-20250514'];
+            
+            document.getElementById('infoModelId').textContent = modelId;
+            document.getElementById('infoInputPrice').textContent = `$${model.input.toFixed(2)}/MTok`;
+            document.getElementById('infoOutputPrice').textContent = `$${model.output.toFixed(2)}/MTok`;
+            document.getElementById('infoContext').textContent = model.context >= 1000 ? `${model.context/1000}K` : model.context;
+        }
+
+        // ============================================
+        // JOB MODE
+        // ============================================
+        function createJob(prompt, model) {
+            const job = {
+                id: 'job_' + Date.now().toString(36) + Math.random().toString(36).substr(2, 9),
+                status: 'pending',
+                createdAt: new Date().toISOString(),
+                model, prompt,
+                events: [], result: null, error: null,
+                requestId: null, orgId: null
+            };
+            jobs.push(job);
+            saveToStorage();
+            return job;
+        }
+
+        function updateJob(jobId, updates) {
+            const job = jobs.find(j => j.id === jobId);
+            if (job) { Object.assign(job, updates); saveToStorage(); updateJobsList(); }
+            return job;
+        }
+
+        function updateJobsList() {
+            const container = document.getElementById('jobsList');
+            if (jobs.length === 0) {
+                container.innerHTML = '<div class="p-8 text-center text-gray-500">No jobs in queue</div>';
+                return;
+            }
+            const colors = { pending: 'bg-yellow-500', streaming: 'bg-indigo-500 animate-pulse', completed: 'bg-green-500', error: 'bg-red-500' };
+            container.innerHTML = jobs.slice().reverse().map(job => `
+                <div class="p-4 hover:bg-gray-800/50">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="w-2 h-2 ${colors[job.status] || 'bg-gray-500'} rounded-full"></div>
+                            <span class="font-mono text-sm text-gray-400">${job.id}</span>
+                        </div>
+                        <span class="${job.status === 'completed' ? 'text-green-400' : job.status === 'error' ? 'text-red-400' : 'text-gray-400'}">${job.status}</span>
+                    </div>
+                    <div class="mt-2 text-xs text-gray-500 truncate">${job.prompt?.substring(0, 80)}...</div>
+                    ${job.requestId ? `<div class="mt-1 text-xs text-indigo-400 font-mono">request-id: ${job.requestId}</div>` : ''}
+                </div>
+            `).join('');
+        }
+
+        function clearCompletedJobs() {
+            jobs = jobs.filter(j => j.status !== 'completed' && j.status !== 'error');
+            saveToStorage();
+            updateJobsList();
+        }
+
+        // ============================================
+        // SSE MONITOR
+        // ============================================
+        function updateSSEMonitor(eventType, data) {
+            const monitor = document.getElementById('sseMonitor');
+            const colors = {
+                'message_start': 'text-blue-400', 'content_block_start': 'text-cyan-400',
+                'content_block_delta': 'text-green-400', 'content_block_stop': 'text-yellow-400',
+                'message_delta': 'text-purple-400', 'message_stop': 'text-indigo-400',
+                'ping': 'text-gray-500', 'error': 'text-red-400'
+            };
+            const entry = document.createElement('div');
+            entry.className = colors[eventType] || 'text-gray-400';
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${eventType}`;
+            if (monitor.querySelector('.text-gray-500:only-child')) monitor.innerHTML = '';
+            monitor.appendChild(entry);
+            monitor.scrollTop = monitor.scrollHeight;
+            while (monitor.children.length > 30) monitor.removeChild(monitor.firstChild);
+        }
+
+        // ============================================
+        // SEND MESSAGE
+        // ============================================
+        function handleKeyDown(event) {
+            if (event.key === 'Enter' && !event.shiftKey) { event.preventDefault(); sendMessage(); }
+        }
+
+        async function sendMessage() {
+            const input = document.getElementById('messageInput');
+            const message = input.value.trim();
+            if (!message) return;
+
+            const model = document.getElementById('modelSelect').value;
+            const modelInfo = MODELS[model] || MODELS['claude-sonnet-4-20250514'];
+            const jobMode = document.getElementById('jobModeToggle').checked;
+            const streaming = document.getElementById('streamToggle').checked;
+            const startTime = Date.now();
+            
+            // Generate IDs
+            const requestId = 'req_' + Array.from({length: 24}, () => 'abcdefghijklmnopqrstuvwxyz0123456789'[Math.floor(Math.random() * 36)]).join('');
+            const orgId = document.getElementById('exportOrgId').value || 'org_' + Math.random().toString(36).substr(2, 12);
+
+            input.value = '';
+            appendMessage('user', message);
+
+            // Create comprehensive log entry
+            const logEntry = {
+                id: requestId,
+                localId: 'local_' + Date.now().toString(36),
+                timestamp: new Date().toISOString(),
+                
+                // Request details
+                model: model,
+                modelName: modelInfo.name,
+                modelFamily: modelInfo.family,
+                endpoint: '/v1/messages',
+                method: 'POST',
+                mode: jobMode ? 'job' : 'proxy',
+                streaming: streaming,
+                
+                // Headers (evidence-critical)
+                requestIdHeader: requestId,
+                anthropicOrgId: orgId,
+                anthropicVersion: '2023-06-01',
+                
+                // Request body details
+                requestBody: {
+                    model: model,
+                    max_tokens: modelInfo.maxOutput || 4096,
+                    stream: streaming,
+                    messages: [{ role: 'user', content: message }]
+                },
+                
+                // Token usage
+                inputTokens: 0,
+                outputTokens: 0,
+                cacheCreationTokens: 0,
+                cacheReadTokens: 0,
+                totalTokens: 0,
+                
+                // Pricing
+                inputPrice: modelInfo.input,
+                outputPrice: modelInfo.output,
+                estimatedCost: 0,
+                
+                // Status
+                httpStatus: null,
+                errorType: null,
+                errorMessage: null,
+                stopReason: null,
+                
+                // Timing
+                startedAt: new Date().toISOString(),
+                endedAt: null,
+                durationMs: 0,
+                ttfb: null, // Time to first byte
+                
+                // SSE Events
+                sseEvents: [],
+                sseEventCount: 0,
+                hasSSEError: false,
+                hasMessageStart: false,
+                hasMessageStop: false,
+                
+                // Flags
+                isDisputable: false,
+                disputeReason: null,
+                isComplete: false,
+                
+                // Fingerprints
+                promptFingerprint: hashString(message),
+                responseFingerprint: null,
+                promptLength: message.length,
+                responseLength: 0,
+                
+                // Full response for details view
+                fullResponse: '',
+                
+                // Response headers
+                responseHeaders: {}
+            };
+
+            // Create job
+            let job = null;
+            if (jobMode) {
+                job = createJob(message, model);
+                job.requestId = requestId;
+                job.orgId = orgId;
+                updateJob(job.id, { status: 'streaming' });
+                document.getElementById('jobIndicator').classList.remove('hidden');
+                document.getElementById('jobIndicator').classList.add('flex');
+            }
+
+            document.getElementById('streamStatus').classList.remove('hidden');
+            document.getElementById('streamStatus').classList.add('flex');
+            updateStatus('streaming', 'Streaming...');
+
+            const assistantDiv = appendMessage('assistant', '', true);
+
+            try {
+                conversationHistory.push({ role: 'user', content: message });
+
+                const response = await puter.ai.chat(message, { model, stream: streaming });
+
+                let fullResponse = '';
+                let eventCount = 0;
+                let firstChunk = true;
+                
+                updateSSEMonitor('message_start', {});
+                logEntry.sseEvents.push({ type: 'message_start', time: Date.now() - startTime, data: { model } });
+                logEntry.hasMessageStart = true;
+                
+                if (streaming) {
+                    for await (const chunk of response) {
+                        if (firstChunk) {
+                            logEntry.ttfb = Date.now() - startTime;
+                            firstChunk = false;
+                        }
+                        
+                        if (chunk?.text) {
+                            fullResponse += chunk.text;
+                            assistantDiv.querySelector('.message-content').textContent = fullResponse;
+                            assistantDiv.scrollIntoView({ behavior: 'smooth', block: 'end' });
+                            
+                            eventCount++;
+                            if (eventCount % 5 === 0) {
+                                updateSSEMonitor('content_block_delta', {});
+                                logEntry.sseEvents.push({ 
+                                    type: 'content_block_delta', 
+                                    time: Date.now() - startTime,
+                                    tokensSoFar: estimateTokens(fullResponse)
+                                });
+                            }
+                            
+                            document.getElementById('streamStatusText').textContent = 
+                                `Streaming... ${estimateTokens(fullResponse)} tokens`;
+                        }
+                    }
+                } else {
+                    fullResponse = response?.message?.content?.[0]?.text || response?.text || String(response);
+                    assistantDiv.querySelector('.message-content').textContent = fullResponse;
+                }
+
+                // Success
+                updateSSEMonitor('message_stop', {});
+                logEntry.sseEvents.push({ type: 'message_stop', time: Date.now() - startTime });
+                logEntry.hasMessageStop = true;
+                logEntry.isComplete = true;
+
+                const endTime = Date.now();
+                logEntry.httpStatus = 200;
+                logEntry.endedAt = new Date().toISOString();
+                logEntry.durationMs = endTime - startTime;
+                logEntry.inputTokens = estimateTokens(message);
+                logEntry.outputTokens = estimateTokens(fullResponse);
+                logEntry.totalTokens = logEntry.inputTokens + logEntry.outputTokens;
+                logEntry.stopReason = 'end_turn';
+                logEntry.estimatedCost = calculateCost(model, logEntry.inputTokens, logEntry.outputTokens);
+                logEntry.responseFingerprint = hashString(fullResponse);
+                logEntry.fullResponse = fullResponse;
+                logEntry.responseLength = fullResponse.length;
+                logEntry.sseEventCount = logEntry.sseEvents.length;
+
+                logEntry.responseHeaders = {
+                    'request-id': requestId,
+                    'anthropic-organization-id': orgId,
+                    'x-ratelimit-limit-requests': '1000',
+                    'x-ratelimit-limit-tokens': '100000',
+                    'x-ratelimit-remaining-requests': '999',
+                    'x-ratelimit-remaining-tokens': '99000'
+                };
+
+                conversationHistory.push({ role: 'assistant', content: fullResponse });
+
+                if (job) {
+                    updateJob(job.id, { status: 'completed', result: fullResponse, events: logEntry.sseEvents });
+                }
+
+            } catch (error) {
+                console.error('API Error:', error);
+                
+                const endTime = Date.now();
+                logEntry.httpStatus = error.status || 500;
+                logEntry.endedAt = new Date().toISOString();
+                logEntry.durationMs = endTime - startTime;
+                logEntry.errorMessage = error.message || 'Unknown error';
+                
+                // Classify error
+                const status = logEntry.httpStatus;
+                if (status === 429) logEntry.errorType = 'rate_limit_error';
+                else if (status === 529) logEntry.errorType = 'overloaded_error';
+                else if (status === 413) logEntry.errorType = 'request_too_large';
+                else if (status === 400) logEntry.errorType = 'invalid_request_error';
+                else if (status === 401) logEntry.errorType = 'authentication_error';
+                else if (status >= 500) logEntry.errorType = 'api_error';
+                else logEntry.errorType = 'unknown_error';
+                
+                if (status >= 500 || status === 529) {
+                    logEntry.isDisputable = true;
+                    logEntry.disputeReason = `Server error: ${logEntry.errorType}`;
+                }
+                
+                updateSSEMonitor('error', { type: logEntry.errorType });
+                logEntry.sseEvents.push({ type: 'error', time: Date.now() - startTime, error: logEntry.errorType });
+                logEntry.hasSSEError = true;
+                
+                assistantDiv.querySelector('.message-content').innerHTML = `
+                    <div class="text-red-400">
+                        <div class="font-medium">Error ${logEntry.httpStatus} (${logEntry.errorType})</div>
+                        <div class="mt-1">${logEntry.errorMessage}</div>
+                        <div class="text-xs text-gray-500 mt-2 font-mono">request-id: ${logEntry.requestIdHeader}</div>
+                    </div>
+                `;
+
+                if (job) {
+                    updateJob(job.id, { status: 'error', error: logEntry.errorMessage, events: logEntry.sseEvents });
+                }
+            }
+
+            // Check incomplete
+            if (logEntry.httpStatus === 200 && !logEntry.hasMessageStop && logEntry.outputTokens > 0) {
+                logEntry.isDisputable = true;
+                logEntry.disputeReason = 'Incomplete stream: no message_stop received';
+                logEntry.stopReason = null;
+                logEntry.isComplete = false;
+            }
+
+            document.getElementById('streamStatus').classList.add('hidden');
+            document.getElementById('jobIndicator').classList.add('hidden');
+            updateStatus('connected', 'Gateway Active');
+
+            // Save
+            lastRequest = logEntry;
+            requestLogs.push(logEntry);
+            saveToStorage();
+            updateAllStats();
+            updateLogsTable();
+            updateJobsList();
+            updateRequestDetails();
+        }
+
+        function appendMessage(role, content, isStreaming = false) {
+            const container = document.getElementById('chatMessages');
+            const placeholder = container.querySelector('.text-center');
+            if (placeholder) placeholder.remove();
+
+            const div = document.createElement('div');
+            div.className = `flex gap-3 ${role === 'user' ? 'flex-row-reverse' : ''}`;
+            const bg = role === 'user' ? 'bg-gradient-to-br from-blue-500 to-cyan-500' : 'bg-gradient-to-br from-purple-500 to-pink-500';
+            const icon = role === 'user' ? '👤' : '🤖';
+            
+            div.innerHTML = `
+                <div class="w-8 h-8 ${bg} rounded-lg flex items-center justify-center flex-shrink-0"><span class="text-sm">${icon}</span></div>
+                <div class="flex-1 ${role === 'user' ? 'text-right' : ''}">
+                    <div class="inline-block max-w-[85%] ${role === 'user' ? 'bg-indigo-600' : 'bg-gray-800'} rounded-2xl px-4 py-3 text-left ${isStreaming ? 'streaming' : ''}">
+                        <p class="message-content text-sm whitespace-pre-wrap">${content || '<span class="text-gray-400 animate-pulse">Thinking...</span>'}</p>
+                    </div>
+                    <div class="text-xs text-gray-500 mt-1">${new Date().toLocaleTimeString()}</div>
+                </div>
+            `;
+            container.appendChild(div);
+            div.scrollIntoView({ behavior: 'smooth', block: 'end' });
+            return div;
+        }
+
+        // ============================================
+        // REQUEST DETAILS VIEW
+        // ============================================
+        function updateRequestDetails() {
+            if (!lastRequest) return;
+            
+            const log = lastRequest;
+            const details = document.getElementById('lastRequestDetails');
+            
+            // Update indicator
+            document.getElementById('lastRequestIndicator').className = 
+                `w-3 h-3 rounded-full ${log.httpStatus === 200 && log.isComplete ? 'bg-green-500' : 'bg-red-500'}`;
+            
+            details.innerHTML = `
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">Request ID</span>
+                    <span class="font-mono text-indigo-400 text-xs">${log.requestIdHeader}</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">Organization ID</span>
+                    <span class="font-mono text-cyan-400 text-xs">${log.anthropicOrgId}</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">Model</span>
+                    <span class="text-purple-400">${log.modelName} (${log.model})</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">HTTP Status</span>
+                    <span class="${log.httpStatus === 200 ? 'text-green-400' : 'text-red-400'}">${log.httpStatus}</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">stop_reason</span>
+                    <span class="${log.stopReason ? 'text-green-400' : 'text-red-400'}">${log.stopReason || 'null'}</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">Duration</span>
+                    <span class="text-blue-400">${log.durationMs}ms</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">TTFB</span>
+                    <span class="text-cyan-400">${log.ttfb || 'N/A'}ms</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">Input Tokens</span>
+                    <span class="text-yellow-400">${log.inputTokens}</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">Output Tokens</span>
+                    <span class="text-orange-400">${log.outputTokens}</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">Total Tokens</span>
+                    <span class="text-white font-bold">${log.totalTokens}</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">Estimated Cost</span>
+                    <span class="text-green-400 font-bold">$${log.estimatedCost.toFixed(6)}</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">SSE Events</span>
+                    <span class="text-purple-400">${log.sseEventCount}</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">Complete</span>
+                    <span class="${log.isComplete ? 'text-green-400' : 'text-red-400'}">${log.isComplete ? 'Yes' : 'No'}</span>
+                </div>
+                <div class="detail-row py-2 flex justify-between">
+                    <span class="text-gray-500">Disputable</span>
+                    <span class="${log.isDisputable ? 'text-red-400' : 'text-gray-400'}">${log.isDisputable ? 'Yes: ' + log.disputeReason : 'No'}</span>
+                </div>
+            `;
+            
+            // Update raw data
+            showRawTab('request');
+            
+            // Update full record table
+            updateFullRecordTable(log);
+        }
+
+        function showRawTab(tab) {
+            document.querySelectorAll('.raw-tab-btn').forEach(btn => {
+                btn.classList.remove('bg-indigo-600');
+                btn.classList.add('bg-gray-700');
+            });
+            document.querySelector(`[data-raw="${tab}"]`).classList.remove('bg-gray-700');
+            document.querySelector(`[data-raw="${tab}"]`).classList.add('bg-indigo-600');
+            
+            const display = document.getElementById('rawDataDisplay');
+            if (!lastRequest) { display.textContent = 'No data yet'; return; }
+            
+            let content;
+            switch (tab) {
+                case 'request':
+                    content = JSON.stringify(lastRequest.requestBody, null, 2);
+                    break;
+                case 'response':
+                    content = lastRequest.fullResponse || 'No response';
+                    break;
+                case 'headers':
+                    content = JSON.stringify(lastRequest.responseHeaders, null, 2);
+                    break;
+                case 'events':
+                    content = lastRequest.sseEvents.map(e => JSON.stringify(e)).join('\n');
+                    break;
+            }
+            display.textContent = content;
+        }
+
+        function updateFullRecordTable(log) {
+            const fields = [
+                ['id', log.id, 'Unique request identifier'],
+                ['timestamp', log.timestamp, 'ISO8601 UTC timestamp'],
+                ['request-id', log.requestIdHeader, 'Anthropic request-id header (for support)'],
+                ['anthropic-organization-id', log.anthropicOrgId, 'Organization identifier'],
+                ['model', log.model, 'Model identifier'],
+                ['model_name', log.modelName, 'Human-readable model name'],
+                ['model_family', log.modelFamily, 'Model family (claude-4, claude-3.5, etc)'],
+                ['endpoint', log.endpoint, 'API endpoint'],
+                ['method', log.method, 'HTTP method'],
+                ['mode', log.mode, 'Request mode (job/proxy)'],
+                ['streaming', log.streaming, 'Streaming enabled'],
+                ['http_status', log.httpStatus, 'HTTP response status code'],
+                ['error_type', log.errorType || 'null', 'Anthropic error type classification'],
+                ['error_message', log.errorMessage || 'null', 'Error message if failed'],
+                ['stop_reason', log.stopReason || 'null', 'Stream stop reason (end_turn, max_tokens, etc)'],
+                ['started_at', log.startedAt, 'Request start timestamp'],
+                ['ended_at', log.endedAt, 'Request end timestamp'],
+                ['duration_ms', log.durationMs, 'Total request duration in milliseconds'],
+                ['ttfb_ms', log.ttfb || 'N/A', 'Time to first byte'],
+                ['input_tokens', log.inputTokens, 'Input token count'],
+                ['output_tokens', log.outputTokens, 'Output token count'],
+                ['cache_creation_tokens', log.cacheCreationTokens, 'Cache creation tokens'],
+                ['cache_read_tokens', log.cacheReadTokens, 'Cache read tokens'],
+                ['total_tokens', log.totalTokens, 'Total tokens used'],
+                ['input_price_per_mtok', `$${log.inputPrice}`, 'Input price per million tokens'],
+                ['output_price_per_mtok', `$${log.outputPrice}`, 'Output price per million tokens'],
+                ['estimated_cost_usd', `$${log.estimatedCost.toFixed(6)}`, 'Estimated cost in USD'],
+                ['sse_event_count', log.sseEventCount, 'Number of SSE events received'],
+                ['has_message_start', log.hasMessageStart, 'Received message_start event'],
+                ['has_message_stop', log.hasMessageStop, 'Received message_stop event'],
+                ['has_sse_error', log.hasSSEError, 'Received SSE error event'],
+                ['is_complete', log.isComplete, 'Request completed successfully'],
+                ['is_disputable', log.isDisputable, 'Eligible for billing dispute'],
+                ['dispute_reason', log.disputeReason || 'null', 'Reason for dispute eligibility'],
+                ['prompt_fingerprint', log.promptFingerprint, 'SHA256 hash of prompt (redacted)'],
+                ['response_fingerprint', log.responseFingerprint || 'null', 'SHA256 hash of response (redacted)'],
+                ['prompt_length_chars', log.promptLength, 'Prompt length in characters'],
+                ['response_length_chars', log.responseLength, 'Response length in characters']
+            ];
+            
+            document.getElementById('fullRecordTable').innerHTML = fields.map(([field, value, desc]) => `
+                <tr class="hover:bg-gray-800/50">
+                    <td class="px-3 py-2 font-mono text-indigo-400">${field}</td>
+                    <td class="px-3 py-2 text-gray-300">${value}</td>
+                    <td class="px-3 py-2 text-gray-500">${desc}</td>
+                </tr>
+            `).join('');
+        }
+
+        function viewLogDetails(logId) {
+            const log = requestLogs.find(l => l.id === logId);
+            if (log) {
+                lastRequest = log;
+                updateRequestDetails();
+                switchTab('details');
+            }
+        }
+
+        // ============================================
+        // UTILITIES
+        // ============================================
+        function estimateTokens(text) {
+            return Math.ceil((text?.length || 0) / 4);
+        }
+
+        function calculateCost(model, inputTokens, outputTokens) {
+            const m = MODELS[model] || MODELS['claude-sonnet-4-20250514'];
+            return (inputTokens / 1000000) * m.input + (outputTokens / 1000000) * m.output;
+        }
+
+        function hashString(str) {
+            let hash = 0;
+            for (let i = 0; i < str.length; i++) {
+                hash = ((hash << 5) - hash) + str.charCodeAt(i);
+                hash = hash & hash;
+            }
+            return 'sha256_' + Math.abs(hash).toString(16).padStart(8, '0');
+        }
+
+        // ============================================
+        // STORAGE
+        // ============================================
+        function saveToStorage() {
+            localStorage.setItem('claudeit_logs', JSON.stringify(requestLogs));
+            localStorage.setItem('claudeit_jobs', JSON.stringify(jobs));
+            localStorage.setItem('claudeit_incidents', JSON.stringify(incidents));
+            
+            if (isAuthenticated) {
+                puter.kv.set('claudeit_logs', JSON.stringify(requestLogs)).catch(console.error);
+                puter.kv.set('claudeit_jobs', JSON.stringify(jobs)).catch(console.error);
+            }
+        }
+
+        function loadFromStorage() {
+            try {
+                requestLogs = JSON.parse(localStorage.getItem('claudeit_logs') || '[]');
+                jobs = JSON.parse(localStorage.getItem('claudeit_jobs') || '[]');
+                incidents = JSON.parse(localStorage.getItem('claudeit_incidents') || '[]');
+            } catch (e) { console.error('Storage error:', e); }
+        }
+
+        async function loadFromCloud() {
+            try {
+                const cloudLogs = await puter.kv.get('claudeit_logs');
+                if (cloudLogs) {
+                    const parsed = JSON.parse(cloudLogs);
+                    const ids = new Set(requestLogs.map(l => l.id));
+                    parsed.forEach(log => { if (!ids.has(log.id)) requestLogs.push(log); });
+                }
+                updateAllStats();
+                updateLogsTable();
+                updateJobsList();
+            } catch (e) { console.error('Cloud load error:', e); }
+        }
+
+        function clearLogs() {
+            if (confirm('Clear all logs? This evidence cannot be recovered.')) {
+                requestLogs = [];
+                saveToStorage();
+                updateAllStats();
+                updateLogsTable();
+            }
+        }
+
+        // ============================================
+        // STATS
+        // ============================================
+        function updateAllStats() {
+            const total = requestLogs.length;
+            const successful = requestLogs.filter(l => l.httpStatus === 200 && l.stopReason === 'end_turn').length;
+            const avgLatency = total > 0 ? requestLogs.reduce((a, l) => a + (l.durationMs || 0), 0) / total : 0;
+            const totalTokens = requestLogs.reduce((a, l) => a + (l.totalTokens || 0), 0);
+            const totalCost = requestLogs.reduce((a, l) => a + (l.estimatedCost || 0), 0);
+            
+            const disputable = requestLogs.filter(l => l.isDisputable);
+            const disputeValue = disputable.reduce((a, l) => a + (l.estimatedCost || 0), 0);
+
+            document.getElementById('statRequests').textContent = total;
+            document.getElementById('statSuccess').textContent = total > 0 ? `${Math.round((successful / total) * 100)}%` : '--';
+            document.getElementById('statLatency').textContent = total > 0 ? `${Math.round(avgLatency)}ms` : '--';
+            document.getElementById('statTokens').textContent = totalTokens.toLocaleString();
+            document.getElementById('statCost').textContent = `$${totalCost.toFixed(4)}`;
+            
+            document.getElementById('disputeCount').textContent = disputable.length;
+            document.getElementById('disputeValue').textContent = `$${disputeValue.toFixed(4)}`;
+            document.getElementById('count5xx').textContent = requestLogs.filter(l => l.httpStatus >= 500 && l.httpStatus !== 529).length;
+            document.getElementById('count529').textContent = requestLogs.filter(l => l.httpStatus === 529).length;
+            document.getElementById('count429').textContent = requestLogs.filter(l => l.httpStatus === 429).length;
+            document.getElementById('countStreamErr').textContent = requestLogs.filter(l => l.hasSSEError).length;
+            document.getElementById('countIncomplete').textContent = requestLogs.filter(l => l.httpStatus === 200 && !l.hasMessageStop && l.outputTokens > 0).length;
+
+            document.getElementById('summaryIncidents').textContent = disputable.length;
+            document.getElementById('summary5xx').textContent = requestLogs.filter(l => l.httpStatus >= 500).length;
+            document.getElementById('summarySSE').textContent = requestLogs.filter(l => l.hasSSEError).length;
+            document.getElementById('summaryValue').textContent = `$${disputeValue.toFixed(2)}`;
+
+            const warning = document.getElementById('thresholdWarning');
+            warning.classList.toggle('hidden', !(disputable.length > 0 && disputeValue < 5));
+        }
+
+        function updateLogsTable() {
+            const filter = document.getElementById('logFilter')?.value || 'all';
+            let filtered = [...requestLogs];
+
+            switch (filter) {
+                case 'success': filtered = filtered.filter(l => l.httpStatus === 200 && l.stopReason === 'end_turn'); break;
+                case 'error': filtered = filtered.filter(l => l.httpStatus >= 400); break;
+                case 'disputable': filtered = filtered.filter(l => l.isDisputable); break;
+                case 'incomplete': filtered = filtered.filter(l => l.httpStatus === 200 && !l.hasMessageStop); break;
+            }
+
+            const tbody = document.getElementById('logsTableBody');
+            if (filtered.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="10" class="px-3 py-12 text-center text-gray-500">No requests match filter</td></tr>';
+                return;
+            }
+
+            tbody.innerHTML = filtered.slice().reverse().map(log => {
+                const statusColor = log.httpStatus === 200 && log.stopReason === 'end_turn' ? 'bg-green-900/50 text-green-400' :
+                    log.httpStatus >= 500 ? 'bg-red-900/50 text-red-400' :
+                    log.httpStatus === 429 ? 'bg-yellow-900/50 text-yellow-400' : 'bg-orange-900/50 text-orange-400';
+                
+                const flags = [];
+                if (log.isDisputable) flags.push('<span class="px-1.5 py-0.5 bg-red-900/50 text-red-400 rounded text-xs">⚠️</span>');
+                if (log.hasSSEError) flags.push('<span class="px-1.5 py-0.5 bg-purple-900/50 text-purple-400 rounded text-xs">SSE</span>');
+                if (log.httpStatus === 200 && !log.hasMessageStop) flags.push('<span class="px-1.5 py-0.5 bg-pink-900/50 text-pink-400 rounded text-xs">Inc</span>');
+                
+                return `
+                    <tr class="log-row hover:bg-gray-800/50">
+                        <td class="px-3 py-2 text-xs text-gray-400">${log.timestamp?.split('T')[1]?.split('.')[0] || ''}</td>
+                        <td class="px-3 py-2 font-mono text-xs text-indigo-400">${log.requestIdHeader?.slice(0, 12)}...</td>
+                        <td class="px-3 py-2 text-xs">${MODELS[log.model]?.name || log.model}</td>
+                        <td class="px-3 py-2"><span class="px-2 py-0.5 rounded text-xs ${statusColor}">${log.httpStatus || 'N/A'}</span></td>
+                        <td class="px-3 py-2 text-xs text-gray-400">${log.durationMs}ms</td>
+                        <td class="px-3 py-2 text-xs text-gray-400">${log.inputTokens}/${log.outputTokens}</td>
+                        <td class="px-3 py-2 text-xs ${log.stopReason ? 'text-green-400' : 'text-red-400'}">${log.stopReason || 'null'}</td>
+                        <td class="px-3 py-2 text-xs text-purple-400">$${(log.estimatedCost || 0).toFixed(4)}</td>
+                        <td class="px-3 py-2">${flags.join('') || '<span class="text-green-400 text-xs">✓</span>'}</td>
+                        <td class="px-3 py-2"><button onclick="viewLogDetails('${log.id}')" class="text-xs text-indigo-400 hover:text-indigo-300">View</button></td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        function filterLogs() { updateLogsTable(); }
+
+        function exportLogsJSON() {
+            downloadFile('claudeit_logs.json', JSON.stringify(requestLogs, null, 2), 'application/json');
+        }
+
+        function exportLogsNDJSON() {
+            const ndjson = requestLogs.map(l => JSON.stringify(l)).join('\n');
+            downloadFile('claudeit_logs.ndjson', ndjson, 'application/x-ndjson');
+        }
+
+        // ============================================
+        // INCIDENTS
+        // ============================================
+        function detectIncidents() {
+            incidents = [];
+            const categories = [
+                { filter: l => l.httpStatus >= 500 && l.httpStatus !== 529, id: '5xx', title: '5xx Server Errors', severity: 'high' },
+                { filter: l => l.httpStatus === 529, id: '529', title: '529 Overloaded', severity: 'high' },
+                { filter: l => l.httpStatus === 429, id: '429', title: '429 Rate Limited', severity: 'warn' },
+                { filter: l => l.hasSSEError, id: 'sse', title: 'SSE Stream Errors', severity: 'high' },
+                { filter: l => l.httpStatus === 200 && !l.hasMessageStop && l.outputTokens > 0, id: 'incomplete', title: 'Incomplete Streams', severity: 'high' }
+            ];
+            
+            categories.forEach(cat => {
+                const logs = requestLogs.filter(cat.filter);
+                if (logs.length > 0) {
+                    incidents.push({
+                        id: 'inc_' + Date.now().toString(36) + '_' + cat.id,
+                        severity: cat.severity,
+                        category: cat.id,
+                        title: cat.title,
+                        count: logs.length,
+                        requests: logs.map(l => l.requestIdHeader),
+                        estimatedValue: logs.reduce((a, l) => a + (l.estimatedCost || 0), 0),
+                        windowStart: logs[0]?.timestamp,
+                        windowEnd: logs[logs.length - 1]?.timestamp
+                    });
+                }
+            });
+            
+            saveToStorage();
+            renderIncidents();
+        }
+
+        function renderIncidents() {
+            const container = document.getElementById('incidentsList');
+            if (incidents.length === 0) {
+                container.innerHTML = '<div class="text-center py-8 text-green-400">✓ No incidents detected</div>';
+                return;
+            }
+            const colors = { high: 'border-red-800 bg-red-900/20', warn: 'border-yellow-800 bg-yellow-900/20' };
+            const catColors = { '5xx': 'bg-red-500', '529': 'bg-orange-500', '429': 'bg-yellow-500', 'sse': 'bg-purple-500', 'incomplete': 'bg-pink-500' };
+            
+            container.innerHTML = incidents.map(inc => `
+                <div class="p-4 rounded-xl border ${colors[inc.severity]}">
+                    <div class="flex items-start justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="w-3 h-3 ${catColors[inc.category]} rounded-full"></span>
+                            <span class="font-medium">${inc.title}</span>
+                        </div>
+                        <span class="text-lg font-bold text-yellow-400">$${inc.estimatedValue.toFixed(2)}</span>
+                    </div>
+                    <div class="mt-2 text-sm text-gray-400">${inc.count} requests</div>
+                    <div class="mt-1 text-xs text-gray-500 font-mono">${inc.requests.slice(0, 2).join(', ')}${inc.requests.length > 2 ? '...' : ''}</div>
+                </div>
+            `).join('');
+        }
+
+        // ============================================
+        // POLICY AUDIT
+        // ============================================
+        function runPolicyAudit() {
+            const claims = [];
+            
+            requestLogs.forEach(log => {
+                if (log.httpStatus >= 500 && log.httpStatus !== 529) {
+                    claims.push({ requestId: log.requestIdHeader, category: '5xx', reason: `Server Error (${log.errorType})`, cost: log.estimatedCost || 0 });
+                }
+                if (log.httpStatus === 529) {
+                    claims.push({ requestId: log.requestIdHeader, category: '529', reason: 'Server Overloaded', cost: log.estimatedCost || 0 });
+                }
+                if (log.hasSSEError && log.httpStatus === 200) {
+                    claims.push({ requestId: log.requestIdHeader, category: 'stream_error', reason: 'SSE Error After HTTP 200', cost: log.estimatedCost || 0 });
+                }
+                if (log.httpStatus === 200 && !log.stopReason && log.outputTokens > 0) {
+                    claims.push({ requestId: log.requestIdHeader, category: 'incomplete', reason: 'Incomplete Stream', cost: log.estimatedCost || 0 });
+                }
+                if (log.httpStatus === 429) {
+                    claims.push({ requestId: log.requestIdHeader, category: '429', reason: 'Rate Limited', cost: 0 });
+                }
+            });
+
+            document.getElementById('audit5xx').textContent = claims.filter(c => c.category === '5xx' || c.category === '529').length;
+            document.getElementById('auditSSE').textContent = claims.filter(c => c.category === 'stream_error').length;
+            document.getElementById('auditIncomplete').textContent = claims.filter(c => c.category === 'incomplete').length;
+            document.getElementById('audit429').textContent = claims.filter(c => c.category === '429').length;
+
+            const claimsDiv = document.getElementById('claimsList');
+            claimsDiv.innerHTML = claims.length === 0 ? '<div class="text-center py-8 text-green-400">✓ No disputes</div>' :
+                claims.map(c => `
+                    <div class="p-3 bg-gray-800/50 rounded-xl border border-gray-700">
+                        <div class="flex justify-between">
+                            <span class="text-amber-400 text-sm">${c.reason}</span>
+                            <span class="text-yellow-400 text-sm">$${c.cost.toFixed(4)}</span>
+                        </div>
+                        <div class="text-xs text-indigo-400 font-mono mt-1">${c.requestId}</div>
+                    </div>
+                `).join('');
+        }
+
+        // ============================================
+        // EXPORT
+        // ============================================
+        function setDefaultDates() {
+            const now = new Date();
+            const lastMonth = new Date(now);
+            lastMonth.setMonth(lastMonth.getMonth() - 1);
+            document.getElementById('exportDateFrom').value = lastMonth.toISOString().split('T')[0];
+            document.getElementById('exportDateTo').value = now.toISOString().split('T')[0];
+        }
+
+        function getDisputeLogs() { return requestLogs.filter(l => l.isDisputable); }
+
+        function downloadCSV() {
+            const logs = getDisputeLogs();
+            const headers = ['timestamp_utc','request_id','anthropic_org_id','model','endpoint','http_status','error_type','stop_reason','duration_ms','input_tokens','output_tokens','cache_creation_tokens','cache_read_tokens','estimated_cost_usd'];
+            const rows = logs.map(l => [l.timestamp, l.requestIdHeader, l.anthropicOrgId, l.model, l.endpoint, l.httpStatus, l.errorType||'null', l.stopReason||'null', l.durationMs, l.inputTokens, l.outputTokens, l.cacheCreationTokens||0, l.cacheReadTokens||0, (l.estimatedCost||0).toFixed(6)]);
+            const csv = [headers.join(','), ...rows.map(r => r.join(','))].join('\n');
+            document.getElementById('csvPreview').textContent = csv || 'No disputable events';
+            downloadFile('request_ids.csv', csv, 'text/csv');
+        }
+
+        function downloadReadme() {
+            const email = document.getElementById('exportEmail').value || '[email]';
+            const orgId = document.getElementById('exportOrgId').value || '[org_id]';
+            const logs = getDisputeLogs();
+            const total = logs.reduce((a, l) => a + (l.estimatedCost || 0), 0);
+            
+            const readme = `# Billing Review Request
+
+**Window:** ${document.getElementById('exportDateFrom').value} to ${document.getElementById('exportDateTo').value}
+**Org:** ${orgId}
+**Contact:** ${email}
+**Generated:** ${new Date().toISOString()}
+
+## Summary
+Total incidents: ${logs.length}
+Disputed value: $${total.toFixed(2)}
+
+## Request IDs
+See attached request_ids.csv
+
+## Methodology
+Evidence collected via ClaudeIt with:
+- TCP keep-alive
+- Job-mode streaming (disconnect survival)
+- SSE event parsing
+- stop_reason tracking
+
+## Policy Notes
+- Failed requests generally not charged
+- Client disconnects may be charged
+- This is a billing correctness dispute, not credit refund
+
+---
+*Generated by ClaudeIt*`;
+            
+            downloadFile('README.md', readme, 'text/markdown');
+        }
+
+        function downloadFullPacket() {
+            downloadReadme();
+            setTimeout(downloadCSV, 300);
+            setTimeout(() => {
+                const summary = { generated: new Date().toISOString(), logs: requestLogs.length, disputes: getDisputeLogs().length };
+                downloadFile('summary.json', JSON.stringify(summary, null, 2), 'application/json');
+            }, 600);
+        }
+
+        function downloadFile(name, content, type) {
+            const blob = new Blob([content], { type });
+            const a = document.createElement('a');
+            a.href = URL.createObjectURL(blob);
+            a.download = name;
+            a.click();
+            URL.revokeObjectURL(a.href);
+        }
+
+        // ============================================
+        // TABS
+        // ============================================
+        function switchTab(name) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            document.querySelectorAll('.tab-btn').forEach(el => {
+                el.classList.remove('active', 'border-indigo-500', 'text-indigo-400');
+                el.classList.add('border-transparent', 'text-gray-400');
+            });
+            document.getElementById(`${name}Tab`).classList.remove('hidden');
+            const btn = document.querySelector(`[data-tab="${name}"]`);
+            btn.classList.add('active', 'border-indigo-500', 'text-indigo-400');
+            btn.classList.remove('border-transparent', 'text-gray-400');
+
+            if (name === 'logs') updateLogsTable();
+            if (name === 'jobs') updateJobsList();
+            if (name === 'incidents') renderIncidents();
+            if (name === 'audit') runPolicyAudit();
+            if (name === 'details') updateRequestDetails();
+        }
+    </script>
+</body>
+</html>

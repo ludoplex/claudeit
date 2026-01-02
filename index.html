@@ -4,113 +4,165 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ClaudeIt - Claude API Billing Monitor</title>
+    <meta name="description" content="Professional API monitoring and billing dispute evidence collector for Anthropic Claude API">
     <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script src="https://js.puter.com/v2/"></script>
+    <style>
+        .gradient-text {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
-    <div id="app" class="container mx-auto px-4 py-8 max-w-6xl">
+    <div class="container mx-auto px-4 py-16 max-w-4xl">
         <!-- Header -->
-        <header class="mb-8">
-            <h1 class="text-4xl font-bold text-gray-900 mb-2">ClaudeIt</h1>
-            <p class="text-lg text-gray-600">Claude API Billing Monitor & Audit Logger</p>
-            <p class="text-sm text-gray-500 mt-2">Track your Anthropic API usage and maintain logs for refund eligibility per ToS</p>
+        <header class="text-center mb-12">
+            <h1 class="text-6xl font-bold gradient-text mb-4">ClaudeIt</h1>
+            <p class="text-2xl text-gray-600 mb-2">Claude API Billing Monitor</p>
+            <p class="text-lg text-gray-500">Professional audit logging and billing dispute evidence collector</p>
         </header>
 
-        <!-- API Key Configuration -->
-        <section id="config-section" class="bg-white rounded-lg shadow-md p-6 mb-6">
-            <h2 class="text-2xl font-semibold mb-4">Configuration</h2>
+        <!-- Quick Launch -->
+        <div class="bg-white rounded-2xl shadow-xl p-8 mb-8 text-center">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Ready to Monitor Your API?</h2>
+            <a href="./app.html" class="inline-block px-8 py-4 bg-indigo-600 text-white text-lg font-semibold rounded-lg hover:bg-indigo-700 transition-all shadow-lg hover:shadow-xl">
+                🚀 Launch ClaudeIt
+            </a>
+            <p class="text-sm text-gray-500 mt-4">No installation required • Runs in your browser • Data stays local</p>
+        </div>
+
+        <!-- Features -->
+        <div class="grid md:grid-cols-2 gap-6 mb-12">
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="text-3xl mb-3">🔌</div>
+                <h3 class="text-xl font-semibold mb-2">API Gateway</h3>
+                <p class="text-gray-600">Interactive chat interface with streaming support and real-time monitoring</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="text-3xl mb-3">📋</div>
+                <h3 class="text-xl font-semibold mb-2">Jobs Queue</h3>
+                <p class="text-gray-600">Background processing that survives browser disconnects</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="text-3xl mb-3">🚨</div>
+                <h3 class="text-xl font-semibold mb-2">Incident Tracking</h3>
+                <p class="text-gray-600">Automatic detection of incomplete streams and billing disputes</p>
+            </div>
+            
+            <div class="bg-white rounded-xl shadow-lg p-6">
+                <div class="text-3xl mb-3">📦</div>
+                <h3 class="text-xl font-semibold mb-2">Support Packets</h3>
+                <p class="text-gray-600">Generate CSV and cover letters for Anthropic support</p>
+            </div>
+        </div>
+
+        <!-- Alternative Implementations -->
+        <div class="bg-gray-100 rounded-xl p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-6">Alternative Implementations</h2>
+            
             <div class="space-y-4">
-                <div>
-                    <label for="api-key" class="block text-sm font-medium text-gray-700 mb-2">Anthropic API Key</label>
-                    <input type="password" id="api-key" 
-                           class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                           placeholder="sk-ant-...">
+                <div class="bg-white rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-semibold text-gray-900">Full Implementation</h4>
+                        <p class="text-sm text-gray-600">Complete audit logging with CSV export (5.7KB)</p>
+                    </div>
+                    <a href="./implementations/index-full.html" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                        Launch
+                    </a>
                 </div>
-                <div>
-                    <button id="save-config-btn" 
-                            class="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
-                        Save Configuration
-                    </button>
-                    <button id="clear-config-btn" 
-                            class="ml-2 px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-gray-500">
-                        Clear Key
-                    </button>
+                
+                <div class="bg-white rounded-lg p-4 flex items-center justify-between">
+                    <div>
+                        <h4 class="font-semibold text-gray-900">Lite Implementation</h4>
+                        <p class="text-sm text-gray-600">Minimal, fast interface for quick testing (3.8KB)</p>
+                    </div>
+                    <a href="./implementations/index-lite.html" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm">
+                        Launch
+                    </a>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Dashboard -->
-        <section id="dashboard" class="mb-6 hidden">
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h3 class="text-sm font-medium text-gray-600 mb-2">Total API Calls</h3>
-                    <p id="total-calls" class="text-3xl font-bold text-gray-900">0</p>
-                </div>
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h3 class="text-sm font-medium text-gray-600 mb-2">Total Tokens Used</h3>
-                    <p id="total-tokens" class="text-3xl font-bold text-gray-900">0</p>
-                </div>
-                <div class="bg-white rounded-lg shadow-md p-6">
-                    <h3 class="text-sm font-medium text-gray-600 mb-2">Estimated Cost</h3>
-                    <p id="total-cost" class="text-3xl font-bold text-gray-900">$0.00</p>
-                </div>
-            </div>
-        </section>
-
-        <!-- Test API Connection -->
-        <section id="test-section" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
-            <h2 class="text-2xl font-semibold mb-4">Test API Connection</h2>
-            <div class="space-y-4">
+        <!-- Model Support -->
+        <div class="bg-white rounded-xl shadow-lg p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Supported Models</h2>
+            <div class="grid md:grid-cols-2 gap-4 text-sm">
                 <div>
-                    <label for="test-prompt" class="block text-sm font-medium text-gray-700 mb-2">Test Prompt</label>
-                    <textarea id="test-prompt" rows="3" 
-                              class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-                              placeholder="Enter a test prompt...">Hello, Claude!</textarea>
+                    <h4 class="font-semibold text-indigo-600 mb-2">Latest Models</h4>
+                    <ul class="space-y-1 text-gray-600">
+                        <li>✨ Claude Opus 4.5 (NEW)</li>
+                        <li>• Claude Opus 4</li>
+                        <li>• Claude Sonnet 4</li>
+                        <li>• Claude Sonnet 3.7</li>
+                    </ul>
                 </div>
                 <div>
-                    <button id="test-api-btn" 
-                            class="px-4 py-2 bg-green-600 text-white rounded-md hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
-                        Send Test Request
-                    </button>
-                </div>
-                <div id="test-result" class="hidden">
-                    <h3 class="text-sm font-medium text-gray-700 mb-2">Response:</h3>
-                    <div id="test-response" class="p-3 bg-gray-100 rounded border border-gray-300 text-sm"></div>
+                    <h4 class="font-semibold text-indigo-600 mb-2">Claude 3.5 & 3</h4>
+                    <ul class="space-y-1 text-gray-600">
+                        <li>• Claude Sonnet 3.5</li>
+                        <li>• Claude Haiku 3.5</li>
+                        <li>• Claude 3 (Opus, Sonnet, Haiku)</li>
+                        <li>• Legacy models</li>
+                    </ul>
                 </div>
             </div>
-        </section>
+        </div>
 
-        <!-- Audit Logs -->
-        <section id="logs-section" class="bg-white rounded-lg shadow-md p-6 mb-6 hidden">
-            <div class="flex justify-between items-center mb-4">
-                <h2 class="text-2xl font-semibold">Audit Logs</h2>
-                <div class="space-x-2">
-                    <button id="export-json-btn" 
-                            class="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm">
-                        Export JSON
-                    </button>
-                    <button id="export-csv-btn" 
-                            class="px-3 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 text-sm">
-                        Export CSV
-                    </button>
-                    <button id="clear-logs-btn" 
-                            class="px-3 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 text-sm">
-                        Clear Logs
-                    </button>
-                </div>
+        <!-- Quick Start -->
+        <div class="bg-indigo-50 border-2 border-indigo-200 rounded-xl p-8 mb-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Quick Start</h2>
+            <ol class="space-y-3 text-gray-700">
+                <li class="flex items-start">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-sm font-bold mr-3 mt-0.5">1</span>
+                    <span>Click "Launch ClaudeIt" above to open the application</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-sm font-bold mr-3 mt-0.5">2</span>
+                    <span>Enter your Anthropic API key (starts with <code class="bg-gray-200 px-1 rounded">sk-ant-</code>)</span>
+                </li>
+                <li class="flex items-start">
+                    <span class="inline-flex items-center justify-center w-6 h-6 rounded-full bg-indigo-600 text-white text-sm font-bold mr-3 mt-0.5">3</span>
+                    <span>Start chatting and monitoring your API usage automatically</span>
+                </li>
+            </ol>
+            <p class="text-sm text-gray-600 mt-4 p-3 bg-white rounded-lg">
+                🔒 <strong>Privacy First:</strong> All data is stored locally using Puter.js. Your API key never leaves your device.
+            </p>
+        </div>
+
+        <!-- Documentation Links -->
+        <div class="bg-white rounded-xl shadow-lg p-8">
+            <h2 class="text-2xl font-bold text-gray-900 mb-4">Documentation</h2>
+            <div class="grid md:grid-cols-3 gap-4">
+                <a href="https://github.com/ludoplex/claudeit" class="block p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-400 transition-all">
+                    <div class="text-2xl mb-2">📚</div>
+                    <h4 class="font-semibold mb-1">GitHub Repo</h4>
+                    <p class="text-sm text-gray-600">Source code & documentation</p>
+                </a>
+                
+                <a href="https://github.com/ludoplex/claudeit/blob/main/implementations/README.md" class="block p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-400 transition-all">
+                    <div class="text-2xl mb-2">🔧</div>
+                    <h4 class="font-semibold mb-1">Implementations</h4>
+                    <p class="text-sm text-gray-600">Compare versions</p>
+                </a>
+                
+                <a href="https://github.com/ludoplex/claudeit/blob/main/USAGE.md" class="block p-4 border-2 border-gray-200 rounded-lg hover:border-indigo-400 transition-all">
+                    <div class="text-2xl mb-2">📖</div>
+                    <h4 class="font-semibold mb-1">Usage Guide</h4>
+                    <p class="text-sm text-gray-600">Detailed instructions</p>
+                </a>
             </div>
-            <div id="logs-container" class="space-y-2 max-h-96 overflow-y-auto">
-                <p class="text-gray-500 text-sm">No logs yet. Make some API calls to see them here.</p>
-            </div>
-        </section>
+        </div>
 
         <!-- Footer -->
-        <footer class="mt-8 text-center text-sm text-gray-500">
-            <p>ClaudeIt is an independent tool. Not affiliated with Anthropic.</p>
-            <p class="mt-1">All data is stored locally using Puter.js. Your API key never leaves your device.</p>
+        <footer class="text-center text-sm text-gray-500 mt-12">
+            <p>ClaudeIt is an independent tool, not affiliated with Anthropic PBC</p>
+            <p class="mt-2">Licensed under GPL-3.0 • <a href="https://github.com/ludoplex/claudeit" class="text-indigo-600 hover:underline">View on GitHub</a></p>
         </footer>
     </div>
-
-    <script src="app.js"></script>
 </body>
 </html>
