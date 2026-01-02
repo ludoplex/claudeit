@@ -28,13 +28,11 @@ jobs:
       run: |
         mkdir -p _site
         cp index.html _site/
-        cp -r implementations _site/
     
     - name: Validate HTML files exist
       run: |
         echo "Validating deployment structure..."
         test -f _site/index.html || (echo "ERROR: index.html missing" && exit 1)
-        test -d _site/implementations || (echo "ERROR: implementations/ missing" && exit 1)
         echo "✅ All required files present"
     
     - name: Upload artifact (for main branch only)
