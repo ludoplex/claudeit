@@ -28,28 +28,12 @@ jobs:
       run: |
         mkdir -p _site
         cp index.html _site/
-        cp app.html _site/
         cp -r implementations _site/
-        
-        # Create a redirect for backward compatibility
-        cat > _site/claudeit.html << 'EOF'
-        <!DOCTYPE html>
-        <html>
-        <head>
-            <meta http-equiv="refresh" content="0; url=./app.html">
-            <title>Redirecting to ClaudeIt...</title>
-        </head>
-        <body>
-            <p>Redirecting to <a href="./app.html">ClaudeIt</a>...</p>
-        </body>
-        </html>
-        EOF
     
     - name: Validate HTML files exist
       run: |
         echo "Validating deployment structure..."
         test -f _site/index.html || (echo "ERROR: index.html missing" && exit 1)
-        test -f _site/app.html || (echo "ERROR: app.html missing" && exit 1)
         test -d _site/implementations || (echo "ERROR: implementations/ missing" && exit 1)
         echo "✅ All required files present"
     

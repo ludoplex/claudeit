@@ -6,18 +6,17 @@ ClaudeIt is a comprehensive audit logging and billing monitor for the Anthropic 
 
 ## Primary Implementation: Enhanced Gateway
 
-The main implementation is now the **Enhanced Gateway** - a professional-grade API monitoring and billing dispute evidence collector.
+The main implementation (`index.html`) is the **Enhanced Gateway** - a professional-grade, single-file API monitoring and billing dispute evidence collector.
 
 ### 🌐 Live Demo
 
 **Try it now:** [https://ludoplex.github.io/claudeit/](https://ludoplex.github.io/claudeit/)
 
-Or launch directly:
-- **[Enhanced Gateway](https://ludoplex.github.io/claudeit/app.html)** (Recommended) - Full-featured application
+Alternative implementations:
 - [Full Implementation](https://ludoplex.github.io/claudeit/implementations/index-full.html) - Complete audit logging
 - [Lite Implementation](https://ludoplex.github.io/claudeit/implementations/index-lite.html) - Minimal interface
 
-### 🚀 Enhanced Gateway Features (app.html)
+### 🚀 Enhanced Gateway Features (index.html)
 
 **Single-file, zero-dependency application** (97KB, runs entirely in browser):
 
@@ -99,14 +98,13 @@ No installation required - just open in your browser and start monitoring!
 
 ### Option 2: Direct Use
 1. Clone this repository
-2. Open `index.html` in a modern web browser for the landing page
-3. Or open `app.html` directly for the enhanced gateway
-4. Enter your Anthropic API key
-5. Start monitoring!
+2. Open `index.html` in a modern web browser (enhanced gateway)
+3. Enter your Anthropic API key
+4. Start monitoring!
 
 ### Option 3: Deploy to Puter.com
 1. Visit [puter.com](https://puter.com)
-2. Upload the `app.html` file
+2. Upload the `index.html` file
 3. Open the application
 
 ### Option 4: Deploy Your Own GitHub Pages
